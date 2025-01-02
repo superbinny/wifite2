@@ -96,8 +96,8 @@ class HcxDumpTool(Dependency):
     dependency_url = 'apt install hcxdumptool'
 
     def __init__(self, target, pcapng_file):
-        if os.path.exists(pcapng_file):
-            os.remove(pcapng_file)
+        if Configuration.linux.exists(pcapng_file):
+            Configuration.linux.remove_file(pcapng_file)
 
         command = [
             'hcxdumptool',
@@ -172,8 +172,8 @@ class HcxPcapngTool(Dependency):
         return john_file
 
     def get_pmkid_hash(self, pcapng_file):
-        if os.path.exists(self.pmkid_file):
-            os.remove(self.pmkid_file)
+        if Configuration.linux.exists(self.pmkid_file):
+            Configuration.linux.remove_file(self.pmkid_file)
 
         command = 'hcxpcapngtool -o ' + self.pmkid_file + " " + pcapng_file
         hcxpcap_proc = Process(command)

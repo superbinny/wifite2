@@ -8,5 +8,7 @@
 #    运行后会显示远程连接的 ip:port
 # 2、Windows 下运行 wifite-win --remote-server-port=ip:port
 # 3、其他参数可以参考 wifite-win --help
+# 调用可以参考以下例子：
+#     ./wifite-win.py --remote-server-port="192.168.192.130:12999" --ignore-negative-one
 from wifite import __main__win
 __main__win.entry_point()

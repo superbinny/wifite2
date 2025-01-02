@@ -129,7 +129,7 @@ class remote_linux_system():
             self.serial.save(_hash, result)
         return result
 
-    def Exec(self, cmd, _hash=None):
+    def exec_cmd_ret(self, cmd, _hash=None):
         if _hash is None:
             _hash = cmd
         if self.Emul:
@@ -166,34 +166,33 @@ class remote_linux_system():
         self.Do('import shutil')  # copy
         self.Do('from signal import SIGINT, SIGTERM')
         self.Do("DN = open(os.devnull, 'w')")
-        self.isLinux = self.Exec('platform.system()') == 'Linux'
-        self.os_sep = self.Exec('os.sep')
-        self.os_name = self.Exec('os.name')
+        self.isLinux = self.exec_cmd_ret('platform.system()') == 'Linux'
+        self.os_sep = self.exec_cmd_ret('os.sep')
+        self.os_name = self.exec_cmd_ret('os.name')
 
     # 有关于os的几个操作
-
     def os_getuid(self):
-        return self.Exec('os.getuid()')
+        return self.exec_cmd_ret('os.getuid()')
 
     def os_uname(self):
-        return self.Exec('os.uname()')
+        return self.exec_cmd_ret('os.uname()')
 
     def os_listdir(self, p):
-        return self.Exec("os.listdir('%s')" % p)
+        return self.exec_cmd_ret("os.listdir('%s')" % p)
 
     def exists(self, p):
         if type(p) is FileType:
             if p.is_remote:
-                return self.Exec(f"os.path.exists('{p.filename}')")
+                return self.exec_cmd_ret(f"os.path.exists('{p.filename}')")
             else:
                 return os.path.exists(p.filename)
         else:
-            return self.Exec(f"os.path.exists('{p}')")
+            return self.exec_cmd_ret(f"os.path.exists('{p}')")
 
     def os_kill(self, process, sign='signal.SIGTERM'):
         try:
             if self.isLinux:
-                # pgid = self.Exec("os.getpgid(%s.pid)" % process)
+                # pgid = self.exec_cmd_ret("os.getpgid(%s.pid)" % process)
                 self.Do("os.kill(%s.pid, %s)" % (process, sign))
                 self.Do("os.waitpid(%s.pid, 0)" % process)
             else:
@@ -203,7 +202,7 @@ class remote_linux_system():
 
     def os_kill_pid(self, pid):
         try:
-            # pgid = self.Exec("os.getpgid(%s.pid)" % process)
+            # pgid = self.exec_cmd_ret("os.getpgid(%s.pid)" % process)
             self.Do("os.kill(%d, %s)" % (pid, 'SIGTERM'))
             self.Do("os.waitpid(%d, 0)" % pid)
         except:
@@ -218,7 +217,7 @@ class remote_linux_system():
         except:
             pass
 
-    def removedirs(self, filename):
+    def remove_dirs(self, filename):
         self.Do('import shutil')
         try:
             self.Do("shutil.rmtree('%s')" % filename)
@@ -241,31 +240,31 @@ class remote_linux_system():
         # command = "'%%s' %% [k for k in glob.iglob('%s')]" % pattern
         # 此处可以用glob.glob(pattern) 返回所有结果
         command = "[k for k in glob.iglob('%s')]" % pattern
-        return self.Exec(command)
+        return self.exec_cmd_ret(command)
 
     # 删除所有与filename匹配的文件和目录
     def remove_files(self, dirname, pattern):
         files = self.findfiles(dirname, pattern)
         for f in files:
-            fullname = self.os_path_join(dirname, f)
+            fullname = self.join(dirname, f)
             if self.exists(fullname):
-                if self.os_isdir(fullname):
-                    self.removedirs(fullname)
+                if self.isdir(fullname):
+                    self.remove_dirs(fullname)
                 else:
                     self.remove_file(fullname)
 
     # os功能
     def os_getcwd(self):
-        return self.Exec("os.getcwd()")
+        return self.exec_cmd_ret("os.getcwd()")
     
     def isfile(self, f):
-        return self.Exec(f"os.path.isfile('{f}')")
+        return self.exec_cmd_ret(f"os.path.isfile('{f}')")
 
-    def os_isdir(self, f):
-        return self.Exec(f"os.path.isdir('{f}')")
+    def isdir(self, f):
+        return self.exec_cmd_ret(f"os.path.isdir('{f}')")
 
-    def os_path_join(self, dirname, subname):
-        return self.Exec("os.path.join('%s', '%s')" % (dirname, subname))
+    def join(self, dirname, subname):
+        return self.exec_cmd_ret("os.path.join('%s', '%s')" % (dirname, subname))
 
     def os_chdir(self, filename):
         try:
@@ -286,7 +285,7 @@ class remote_linux_system():
             pass
 
     def basename(self, fname):
-        return self.Exec("os.path.basename('%s')" % fname)
+        return self.exec_cmd_ret("os.path.basename('%s')" % fname)
 
     def copy(self, src, dst):
         try:
@@ -305,34 +304,21 @@ class remote_linux_system():
             print('copy_from_linux error %s' % e.message)
 
     def rename(self, old, new):
-        """
-            Renames file 'old' to 'new', works with separate partitions.
-            Thanks to hannan.sadar
-        """
-        try:
-            self.Do("os.rename('%s', '%s')" % (old, new))
-        except os.error as detail:
-            if detail.errno == errno.EXDEV:
-                try:
-                    self.copy(old, new)
-                except:
-                    self.os_unlink(new)
-                    raise
-                self.os_unlink(old)
-            # if desired, deal with other errors
-            else:
-                raise
+        result = self.client.rename(old, new)
+        return result
 
     # 以下几个函数是关于文件读写和关闭的
+    # 使用 fhandle 是担心重名
     def open(self, filename, mode, fhandle='fhandle', encoding='utf-8'):
         if encoding is None:
             cmd = f"{fhandle}=open('{filename}', '{mode}')"
         else:
             cmd = f"{fhandle}=open('{filename}', '{mode}', encoding='{encoding}')"
         self.Do(cmd)
+        return self.client.get_result(fhandle)
 
     def read(self, fhandle):
-        return self.Exec(f"{fhandle}.read()")
+        return self.exec_cmd_ret(f"{fhandle}.read()")
 
     def readfile(self, p, mode='r', encoding='utf-8', fhandle='fhandle'):
         if type(p) is FileType:
@@ -356,7 +342,7 @@ class remote_linux_system():
 
     # 获取当前运行的服务器的PID
     def get_server_pid(self):
-        return self.Exec("os.getpid()")
+        return self.exec_cmd_ret("os.getpid()")
 
     def do_split(self, line, symbol, max_col=0):
         lines = []
@@ -456,7 +442,7 @@ class remote_linux_system():
     def program_communicate(self, program, stdout='PIPE', stderr='PIPE'):
         result = None
         command = "Popen(%s, stdout=%s, stderr=%s).communicate()" % (program, stdout, stderr)
-        result = self.Exec(command)
+        result = self.exec_cmd_ret(command)
         return result
 
     # 相当于：
@@ -471,7 +457,7 @@ class remote_linux_system():
         #    BnSpeedy.set_default_timeout(timeout)
         self.Do(cmd)
         self.wait('proctemp')
-        result = self.Exec("proctemp.communicate()", cmd + "proctemp.communicate()")
+        result = self.exec_cmd_ret("proctemp.communicate()", cmd + "proctemp.communicate()")
         # BnSpeedy.set_default_timeout(DEFAULT_TIMEOUT)
         return result
 
@@ -490,17 +476,15 @@ class remote_linux_system():
     def call_program(self, program, stdout='DN', stderr='DN'):
         self.Do("call(%s, stdout=%s, stderr=%s)" % (program, stdout, stderr))
     
-    def Popen(self, command, rest='', stdout='DN', stderr='DN'):
+    def DoPopen(self, command, rest='', stdout='DN', stderr='DN'):
         if rest != '':
             command = "%s=Popen(%s, stdout=%s, stderr=%s)" % (rest, command, stdout, stderr)
         else:
             command = "Popen(%s, stdout=%s, stderr=%s)" % (command, stdout, stderr)
         self.Do(command)
     
-    def DoPopen(self, command, rest='', stdout='DN', stderr='DN'):
-        '''
-        有时间再实现这个完整的类 Popen
-        def __init__(self, args, bufsize=-1, executable=None,
+    # 实现一个完整的 Popen
+    def Popen(self, args, bufsize=-1, executable=None,
                  stdin=None, stdout=None, stderr=None,
                  preexec_fn=None, close_fds=True,
                  shell=False, cwd=None, env=None, universal_newlines=None,
@@ -508,32 +492,42 @@ class remote_linux_system():
                  restore_signals=True, start_new_session=False,
                  pass_fds=(), *, user=None, group=None, extra_groups=None,
                  encoding=None, errors=None, text=None, umask=-1, pipesize=-1,
-                 process_group=None):
-        '''
-        if rest != '':
-            command = "%s=Popen(%s, stdout=%s, stderr=%s)" % (rest, command, stdout, stderr)
-        else:
-            command = "Popen(%s, stdout=%s, stderr=%s)" % (command, stdout, stderr)
-        self.Do(command)
+                 process_group=None, rest=None):
 
+        if rest is None:
+            rest = 'resultTemp'
+
+        command = f"{rest}=Popen(args={args}, bufsize={bufsize}, executable={executable},
+                            stdin={stdin}, stdout={stdout}, stderr={stderr},
+                            preexec_fn={preexec_fn}, close_fds={close_fds},
+                            shell={shell}, cwd={cwd}, env={env}, universal_newlines={universal_newlines},
+                            startupinfo={startupinfo}, creationflags={creationflags},
+                            restore_signals={restore_signals}, start_new_session={start_new_session},
+                            pass_fds={pass_fds}, *, user={user}, group={group}, extra_groups={extra_groups},
+                            encoding={encoding}, errors={errors}, text={text}, umask={umask}, pipesize={pipesize},
+                            process_group={process_group}, rest={rest})"
+        
+        self.Do(command)
+        return self.client.get_result(rest)
+    
     def stdout_readline(self, rest):
-        return self.Exec('%s.stdout.readline()' % rest)
+        return self.exec_cmd_ret('%s.stdout.readline()' % rest)
 
     def stdout_read(self, rest):
-        return self.Exec('%s.stdout.read()' % rest)
+        return self.exec_cmd_ret('%s.stdout.read()' % rest)
 
     def poll(self, rest):
-        return self.Exec('%s.poll()' % rest)
+        return self.exec_cmd_ret('%s.poll()' % rest)
 
     def poll_interrupt(self, rest):
-        return self.Exec('%s.interrupt()' % rest)
+        return self.exec_cmd_ret('%s.interrupt()' % rest)
 
     def communicate(self, rest):
-        return self.Exec('%s.communicate()' % rest)
+        return self.exec_cmd_ret('%s.communicate()' % rest)
 
     def mkdtemp(self, prefix):
         self.Do('from tempfile import mkdtemp')
-        return self.Exec("mkdtemp(prefix='%s')" % prefix)
+        return self.exec_cmd_ret("mkdtemp(prefix='%s')" % prefix)
 
     # 有关网络的操作
     # 获取某一个接口的MAC地址
@@ -706,10 +700,10 @@ if __name__ == '__main__':
     
     linux = remote_linux_system(server_ip=server_ip, server_port=server_port)
     linux.connect()
-    print(linux.Exec('os.name') + linux.get_server_pid())
+    print(linux.exec_cmd_ret('os.name') + linux.get_server_pid())
 
     fsrc = '/etc/passwd'
-    fdst = 'e:\\passwd'
+    fdst = 'd:\\passwd'
     if os.path.exists(fdst):
         os.remove(fdst)
     if linux.exists(fsrc):
@@ -717,7 +711,9 @@ if __name__ == '__main__':
         linux.copy_from_linux(fsrc, fdst)
         if os.path.exists(fdst):
             os.remove(fdst)
-            print('ok')
+            print('Ok copy_from_linux')
+        else:
+            print('Error copy_from_linux')
 
     pslist = linux.get_server_sub_pids()
 
@@ -748,7 +744,7 @@ if __name__ == '__main__':
 
         proc_airodump_ng = 'proc_airodump_ng'
 
-        linux.Popen(command, proc_airodump_ng, stdout='DN', stderr='DN')
+        linux.DoPopen(command, proc_airodump_ng, stdout='DN', stderr='DN')
         time.sleep(30)
         print('before interrupt:\n' + linux.get_server_sub_pids())
         linux.send_interrupt(proc_airodump_ng)
@@ -759,5 +755,6 @@ if __name__ == '__main__':
             print(s)
 
         linux.disable_monitor_mode(monitors[0])
+
     linux.kill_all_subprocess()
     linux.remove_files('/tmp', 'wifite*')

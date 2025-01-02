@@ -1,3 +1,26 @@
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# *********************************************************
+#       Created:     2014-11-20   20:02
+#       Filename:    server_zerorpc.py
+#       Author:   ______
+#                    / /  (_)
+#                   / /_  /\____  ____  __   ______
+#                  / __ \/ / __ \/ __ \/ /  / /
+#                 / /_/ / / / / / / / / /__/ /
+#                /_____/_/_/ /_/_/ /_/\___  /
+#               ========== ______________/ /
+#                          \______________/
+#
+#       Email:       Binny@vip.163.com
+#       Group:       SP
+#       Create By:   Binny
+#       Purpose:     用于远程在LINUX环境中执行命令，结果通过网络返回
+#       Copyright:   TJYM(C) 2014 - All Rights Reserved
+#       LastModify:  2014-11-20
+# *********************************************************
+
 import zerorpc
 import socket
 import os
@@ -29,6 +52,13 @@ class MyServer():
         exec(cmd, self.globals, self.locals)
         #print(self.locals)
         return self.locals['result']
+    
+    def get_result(self, result):
+        if result in self.locals:
+            return self.locals[result]
+        else:
+            print(f'Error:{result} not in locals!')
+            return None
 
     def is_debug(self):
         if 'debug' in self.globals:
@@ -64,6 +94,28 @@ class MyServer():
         else:
             return None
 
+    def rename(self, source, destination):
+        """
+            Renames file 'old' to 'new', works with separate partitions.
+            Thanks to hannan.sadar
+        """
+        if not os.path.exists(source):
+            print(f"The file {source} not exist!")
+            return 'ErrorNotExist'
+        else:
+            try:
+                # 尝试重命名文件
+                os.rename(source, destination)
+                return 'OK'
+            except PermissionError:
+                # print("Insufficient permissions")
+                return 'ErrorPermissions'
+            except FileExistsError:
+                # print("The target file already exists")
+                return 'ErrorExistDestination'
+            except Exception as e:
+                # print(f"发生未知错误: {e}")
+                return f'ErrorUnknow:{e}'
 
 if __name__ == "__main__":
     print('Start server ...')

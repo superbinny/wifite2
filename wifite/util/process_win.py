@@ -17,7 +17,7 @@ class Process(object):
     @staticmethod
     def devnull():
         """ Helper method for opening devnull """
-        return open('/dev/null', 'w')
+        return Configuration.linux.open('/dev/null', mode='w')
 
     @staticmethod
     def split_command(command):
@@ -105,8 +105,9 @@ class Process(object):
             serr = stderr
 
         self.start_time = time.time()
-        # self.pid = Configuration.linux.DoPopen(command, stdout=sout, stderr=serr, stdin=stdin, cwd=cwd, bufsize=bufsize)
-        self.pid = Configuration.linux.program_communicate(command)
+        # self.pid = Popen(command, stdout=sout, stderr=serr, stdin=stdin, cwd=cwd, bufsize=bufsize)
+        self.popen = Configuration.Popen(command, stdout=sout, stderr=serr, stdin=stdin, cwd=cwd, bufsize=bufsize)
+        self.pid = self.popen.pid
 
     def __del__(self):
         """

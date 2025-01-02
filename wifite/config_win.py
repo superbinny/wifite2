@@ -12,6 +12,13 @@ def init_linux(server_ip, server_port, isEmul=False, isSave=False):
     linux.client = linux.get_connect()
     linux.reset()
     return linux
+
+# 模拟远端的 popen
+from subprocess import PIPE
+class LinuxPopen():
+    def __init__(self, linux, command, stdout=PIPE, stderr=PIPE, cwd=None, bufsize=0, stdin=PIPE):
+        self.pid = linux.Popen(args=command, stdout=stdout, stderr=stderr, cwd=cwd, bufsize=bufsize, stdin=stdin)
+
 class Configuration(object):
     """ Stores configuration variables and functions for Wifite. """
     is_windows = sys.platform == 'win32'
