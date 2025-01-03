@@ -167,6 +167,9 @@ class remote_linux_system():
         else:
             try:
                 result_id, result = self.client.exec_cmd_ret(cmd, async_=True)
+                if result_id is None:
+                    print('Remote error: %s' % result)
+                return None
             except Exception as ex:
                 remote_linux_system.pexception(ex, call_from='exec_cmd_ret', ex_info=cmd)
 
@@ -214,7 +217,7 @@ class remote_linux_system():
 
     def get_result(self, result):
         try:
-            ret = self.client.result(result, async_=True)
+            result_id, ret = self.client.get_result(result, async_=True)
         except Exception as ex:
             remote_linux_system.pexception(ex, call_from='get_result')
         return ret

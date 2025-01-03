@@ -59,16 +59,20 @@ class MyServer():
     def exec_cmd_ret(self, request):
         result_id = 'result' + MyServer.generate_random_string(6)
         cmd = f'{result_id}=' + request
-        exec(cmd, self.globals, self.locals)
-        #print(self.locals)
+        try:
+            exec(cmd, self.globals, self.locals)
+        except Exception as ex:
+            print('Error: exec_cmd_ret %s' % ex)
+            if result_id in self.locals:
+                self.locals.pop(result_id)
+            return None, str(type(ex)) + ":" + ex.args[0]
         return result_id, self.locals[result_id]
     
     def get_result(self, result):
         if result in self.locals:
-            return self.locals[result]
+            return result, self.locals[result]
         else:
-            print(f'Error:{result} not in locals!')
-            return None
+            return result, f'Error:{result} not in locals!'
 
     def is_debug(self):
         if 'debug' in self.globals:

@@ -254,7 +254,7 @@ class AttackPMKID(Attack):
             if pmkid_hash is not None:
                 break  # Got PMKID
 
-            Color.pattack('PMKID', self.target, 'CAPTURE', 'Waiting for PMKID ({C}%s{W})' % str(self.timer))
+            Color.pattack('PMKID', self.target, 'CAPTURE', 'Waiting for PMKID ({C}%s{W})\n' % str(self.timer))
             time.sleep(1)
 
         self.keep_capturing = False
