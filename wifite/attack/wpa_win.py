@@ -13,7 +13,7 @@ from ..model.wpa_result_win import CrackResultWPA
 import time
 # import os
 import re
-from shutil import copy
+# from shutil import copy
 
 
 class AttackWPA(Attack):
@@ -136,7 +136,7 @@ class AttackWPA(Attack):
 
                 # Copy .cap file to temp for consistency
                 temp_file = Configuration.temp('handshake.cap.bak')
-                copy(cap_file, temp_file)
+                Configuration.linux.copy(cap_file, temp_file)
 
                 # Check cap file in temp for Handshake
                 bssid = airodump_target.bssid
@@ -234,7 +234,7 @@ class AttackWPA(Attack):
             handshake.strip(outfile=cap_filename)
         else:
             Color.p('{+} saving copy of {C}handshake{W} to {C}%s{W} ' % cap_filename)
-            copy(handshake.capfile, cap_filename)
+            Configuration.linux.copy(handshake.capfile, cap_filename)
         Color.pl('{G}saved{W}')
         # Update handshake to use the stored handshake file for future operations
         handshake.capfile = cap_filename
