@@ -47,7 +47,7 @@ class SerialObject():
         command = '%s' % cmd
         md5 = hashlib.md5(command)
         return os.path.join(self.emul_path, md5.hexdigest() + '.pickle')
-
+        
     def save(self, cmd, data):
         fname = self.get_emul_file(cmd)
         with open(fname, 'wb') as f:
@@ -98,6 +98,20 @@ class remote_linux_system():
         # print(reset_namespace)
         return client
     
+    @staticmethod
+    def get_local_file_md5(file_path):
+        # 获取文件的 md5
+        hash_md5 = hashlib.md5()
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()
+    
+    @staticmethod
+    def get_remote_file_md5(self, file_path):
+        # 获取远程文件的 md5
+        return self.client.get_file_md5(file_path, async_=True)
+    
     def reset(self):
         self.ResetNamespace()
         
@@ -105,7 +119,7 @@ class remote_linux_system():
         self.emul_path = p
         self.serial = SerialObject(self.emul_path)
 
-    def Exec_timeout(self, cmd, _hash=None, timeout=60):
+    def exec_timeout(self, cmd, _hash=None, timeout=60):
         """带超时的命令执行"""
         if _hash is None:
             _hash = cmd
@@ -312,40 +326,63 @@ DN = open(os.devnull, 'w')
 
     def basename(self, fname):
         return self.exec_cmd_ret("os.path.basename('%s')" % fname)
+    
+    def get_user_home(self):
+        # 得到当前用户的 Home
+        return self.exec_cmd_ret("os.path.expanduser('~')")
 
     def copy(self, src, dst):
         self.Do("shutil.copy('%s', '%s')" % (src, dst))
 
-    def copy_from_remote(self, src, dst):
+    def copy_from_remote(self, src, dst, overwrite=True, check=False):
         '''
         将远程文件拷贝到本地
         '''
+        if not overwrite and self.exist(dst):
+            return True
+        
         try:
-            result = self.client.get_file(src, async_=True)
-            if result is not None:
+            data = self.client.get_file(src, async_=True)
+            if data is not None:
                 par_path = os.path.dirname(dst)
                 if not os.path.exists(par_path):
                     os.makedirs(par_path)
+                if self.exist(dst):
+                    os.remove(dst)
                 f = open(dst, 'wb')
-                f.write(result)
+                f.write(data)
                 f.close()
+                if check:
+                    remote_md5 = self.get_remote_file_md5(src)
+                    local_md5 = remote_linux_system.get_local_file_md5(dst)
+                    return remote_md5==local_md5
+                return self.exists(dst)
         except Exception as e:
-            print('Error: copy_from_remote %s' % e.message)
+            print('Error: copy_from_remote %s' % e)
+        return None
 
-    def copy_to_remote(self, src, dst, overwrite=True):
+    def copy_to_remote(self, src, dst, overwrite=True, check=False):
         '''
         将本地文件拷贝到远程
         '''
         if not overwrite and self.exist(dst):
             return True
+        
         try:
             f = open(src, 'rb')
             data = f.read()
             f.close()
-            result = self.client.set_file(dst, data, overwrite=True, async_=True)
-            return self.exist(dst)
+            result = self.client.set_file(dst, data, overwrite=overwrite, async_=True)
+            if not result:
+                return False
+            if check:
+                remote_md5 = self.get_remote_file_md5(dst)
+                local_md5 = remote_linux_system.get_local_file_md5(dst)
+                return remote_md5==local_md5
+            return self.exists(dst)
         except Exception as e:
-            print('Error: copy_to_remote %s' % e.message)
+            print('Error: copy_to_remote %s' % e)
+        return None
 
     def rename(self, old, new):
         result = self.client.rename(old, new, async_=True)

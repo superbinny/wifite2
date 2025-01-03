@@ -22,7 +22,7 @@
 # *********************************************************
 
 import zerorpc
-import socket
+import hashlib
 import os
 # pip install netifaces
 import netifaces as ni
@@ -94,7 +94,7 @@ class MyServer():
         else:
             return None
 
-    def set_file(self, request, overwrite=False):
+    def set_file(self, request, data, overwrite=False):
         if os.path.exists(request):
             if overwrite:
                 os.remove(request)
@@ -102,11 +102,19 @@ class MyServer():
                 return True
         try:
             f = open(request, 'wb')
-            f.write(request)
+            f.write(data)
             f.close()
             return os.path.exists(f)
         except:
             return False
+        
+    def get_file_md5(self, file_path):
+        # 获取文件的 md5
+        hash_md5 = hashlib.md5()
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()
 
     def rename(self, source, destination):
         """

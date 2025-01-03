@@ -241,16 +241,21 @@ class Configuration(object):
                 if os.path.exists(local_file):
                     # print(f'存在密码文件 {wlist}，位于本地，拷贝到远程文件夹')
                     # 将本地文件拷贝到远程的当前用户目录下：
-                    remote_file = cls.linux.join('${HOME}/data', wlist)
+                    home_dir = cls.linux.get_user_home()
+                    remote_file = cls.linux.join(f'{home_dir}/data', wlist)
                     if cls.linux.exists(remote_file):
-                        cls.wordlist = remote_file
-                        break
+                        # 如果两边文件的 md5 不相同，则不是同一个文件
+                        remote_md5 = cls.linux.get_remote_file_md5(remote_file)
+                        local_md5 = cls.linux.get_local_file_md5(local_file)
+                        if remote_md5==local_md5:
+                            cls.wordlist = remote_file
+                            break
                     else:
                         par_dir = cls.linux.dirname(remote_file)
                         if not cls.linux.exists(par_dir):
                             cls.linux.makedirs(par_dir)
-                        cls.linux.copy_to_remote(local_file, remote_file)
-                        if cls.linux.exists(remote_file):
+                        result = cls.linux.copy_to_remote(local_file, remote_file, check=True)
+                        if result and cls.linux.exists(remote_file):
                             cls.wordlist = remote_file
                             break
         
