@@ -8,7 +8,7 @@ import os
 # from subprocess import Popen, PIPE
 from subprocess import PIPE
 from ..util.color_win import Color
-from ..config_win import Configuration
+from ..config_win import Configuration, LinuxPopen
 
 
 class Process(object):
@@ -17,7 +17,11 @@ class Process(object):
     @staticmethod
     def devnull():
         """ Helper method for opening devnull """
-        return Configuration.linux.open('/dev/null', mode='w')
+        # fhandle = 'fhandle'
+        # Configuration.linux.open('/dev/null', fhandle=fhandle, mode='w')
+        # return fhandle
+        # 因为 DN 在初始化的时候已经计算
+        return 'DN'
 
     @staticmethod
     def split_command(command):
@@ -83,7 +87,11 @@ class Process(object):
             Configuration.existing_commands.update({program: exist})
         return exist
 
-    def __init__(self, command, devnull=False, stdout=PIPE, stderr=PIPE, cwd=None, bufsize=0, stdin=PIPE):
+    @staticmethod
+    def get_result_id(command):
+        return command[0].replace('-', '_')
+        
+    def __init__(self, command, devnull=False, stdout='PIPE', stderr='PIPE', cwd='None', bufsize='0', stdin='PIPE'):
         """ Starts executing command """
 
         if type(command) is str:
@@ -106,7 +114,8 @@ class Process(object):
 
         self.start_time = time.time()
         # self.pid = Popen(command, stdout=sout, stderr=serr, stdin=stdin, cwd=cwd, bufsize=bufsize)
-        self.popen = Configuration.Popen(command, stdout=sout, stderr=serr, stdin=stdin, cwd=cwd, bufsize=bufsize)
+        self.result_id = Process.get_result_id(command)
+        self.popen = LinuxPopen(Configuration.linux, command, stdout=sout, stderr=serr, stdin=stdin, cwd=cwd, bufsize=bufsize, result_id=self.result_id)
         self.pid = self.popen.pid
 
     def __del__(self):
@@ -115,8 +124,8 @@ class Process(object):
             If process is still running at this point, it should die.
         """
         with contextlib.suppress(AttributeError):
-            if self.pid and self.pid.poll() is None:
-                self.interrupt()
+            if self.pid and self.popen.poll(self.result_id) is None:
+                self.interrupt(self.result_id)
 
     def stdout(self):
         """ Waits for process to finish, returns stdout output """
@@ -149,11 +158,11 @@ class Process(object):
         #    self.pid.wait()
         #if self.out is None:
         #    (self.out, self.err) = self.pid.communicate()
-        self.out = self.pid[0]
+        self.out = self.popen.output[0]
         if type(self.out) is bytes:
             self.out = self.out.decode('utf-8')
 
-        self.err = self.pid[1]
+        self.err = self.popen.output[1]
         if type(self.err) is bytes:
             self.err = self.err.decode('utf-8')
 
@@ -161,29 +170,32 @@ class Process(object):
 
     def poll(self):
         """ Returns exit code if process is dead, otherwise 'None' """
-        return self.pid.poll()
+        # return self.pid.poll()
+        return Configuration.linux.poll(self.popen.result_id)
 
     def wait(self):
-        self.pid.wait()
+        # self.pid.wait()
+        Configuration.linux.wait(self.popen.result_id)
+        
 
     def running_time(self):
         """ Returns number of seconds since process was started """
         return int(time.time() - self.start_time)
 
-    def interrupt(self, wait_time=2.0):
+    def interrupt(self, wait_time=2.0, result_id=None):
         """
             Send interrupt to current process.
             If process fails to exit within `wait_time` seconds, terminates it.
         """
         try:
-            self._extracted_from_interrupt_7(wait_time)
+            self._extracted_from_interrupt_7(wait_time, result_id)
         except OSError as e:
             if 'No such process' in e.__str__():
                 return
             raise e  # process cannot be killed
 
     # TODO Rename this here and in `interrupt`
-    def _extracted_from_interrupt_7(self, wait_time):
+    def _extracted_from_interrupt_7(self, wait_time, result_id):
         pid = self.pid.pid
         cmd = self.command
         if type(cmd) is list:
@@ -212,21 +224,30 @@ class Process(object):
 
 
 if __name__ == '__main__':
-    Configuration.initialize(False)
-    p = Process('ls')
+    from ..config_win import init_linux
+    server_ip = '192.168.192.130'
+    server_port = '12999'
+    linux = init_linux(server_ip=server_ip, server_port=server_port)
+    Configuration.initialize(linux=linux, load_interface=False)
+    command = ['ls']
+    # p = Process(command)
+    result_id = Process.get_result_id(command)
+    p = LinuxPopen(Configuration.linux, command, result_id=result_id)
     print((p.stdout()))
     print((p.stderr()))
-    p.interrupt()
+    p.interrupt(result_id)
 
     # Calling as list of arguments
-    (out, err) = Process.call(['ls', '-lah'])
+    command = ['ls', '-lah']
+    (out, err) = Process.call(command)
     print(out)
     print(err)
 
     print('\n---------------------\n')
 
     # Calling as string
-    (out, err) = Process.call('ls -l | head -2')
+    command = 'ls -l | head -2'
+    (out, err) = Process.call(command)
     print(out)
     print(err)
 

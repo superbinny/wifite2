@@ -94,6 +94,20 @@ class MyServer():
         else:
             return None
 
+    def set_file(self, request, overwrite=False):
+        if os.path.exists(request):
+            if overwrite:
+                os.remove(request)
+            else:
+                return True
+        try:
+            f = open(request, 'wb')
+            f.write(request)
+            f.close()
+            return os.path.exists(f)
+        except:
+            return False
+
     def rename(self, source, destination):
         """
             Renames file 'old' to 'new', works with separate partitions.

@@ -6,7 +6,7 @@ from ..config_win import Configuration
 from ..util.process_win import Process
 from ..util.color_win import Color
 
-import os
+# import os
 
 hccapx_autoremove = False  # change this to True if you want the hccapx files to be automatically removed
 
@@ -96,6 +96,7 @@ class HcxDumpTool(Dependency):
     dependency_url = 'apt install hcxdumptool'
 
     def __init__(self, target, pcapng_file):
+        print('HcxDumpTool', pcapng_file)
         if Configuration.linux.exists(pcapng_file):
             Configuration.linux.remove_file(pcapng_file)
 
@@ -128,8 +129,8 @@ class HcxPcapngTool(Dependency):
     @staticmethod
     def generate_hccapx_file(handshake, show_command=False):
         hccapx_file = Configuration.temp('generated.hccapx')
-        if os.path.exists(hccapx_file):
-            os.remove(hccapx_file)
+        if Configuration.linux.exists(hccapx_file):
+            Configuration.linux.remove_file(hccapx_file)
 
         command = [
             'hcxpcapngtool',
@@ -142,7 +143,7 @@ class HcxPcapngTool(Dependency):
 
         process = Process(command)
         stdout, stderr = process.get_output()
-        if not os.path.exists(hccapx_file):
+        if not Configuration.linux.exists(hccapx_file):
             raise ValueError('Failed to generate .hccapx file, output: \n%s\n%s' % (
                 stdout, stderr))
 
@@ -151,8 +152,8 @@ class HcxPcapngTool(Dependency):
     @staticmethod
     def generate_john_file(handshake, show_command=False):
         john_file = Configuration.temp('generated.john')
-        if os.path.exists(john_file):
-            os.remove(john_file)
+        if Configuration.linux.exists(john_file):
+            Configuration.linux.remove_file(john_file)
 
         command = [
             'hcxpcapngtool',
@@ -165,7 +166,7 @@ class HcxPcapngTool(Dependency):
 
         process = Process(command)
         stdout, stderr = process.get_output()
-        if not os.path.exists(john_file):
+        if Configuration.linux.exists(john_file):
             raise ValueError('Failed to generate .john file, output: \n%s\n%s' % (
                 stdout, stderr))
 
@@ -179,11 +180,12 @@ class HcxPcapngTool(Dependency):
         hcxpcap_proc = Process(command)
         hcxpcap_proc.wait()
 
-        if not os.path.exists(self.pmkid_file):
+        if not Configuration.linux.exists(self.pmkid_file):
             return None
 
-        with open(self.pmkid_file, 'r') as f:
-            output = f.read()
+        # with open(self.pmkid_file, 'r') as f:
+        #    output = f.read()
+        output = Configuration.linux.readfile(self.pmkid_file, 'r')
             # Each line looks like:
             # hash*bssid*station*essid
 
@@ -197,5 +199,5 @@ class HcxPcapngTool(Dependency):
                 matching_pmkid_hash = line
                 break
 
-        os.remove(self.pmkid_file)
+        Configuration.linux.remove_file(self.pmkid_file)
         return matching_pmkid_hash

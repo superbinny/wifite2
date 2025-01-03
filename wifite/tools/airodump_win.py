@@ -5,7 +5,7 @@ from .dependency_win import Dependency
 from .tshark_win import Tshark
 from .wash_win import Wash
 from ..util.process_win import Process
-from ..config_win import Configuration
+from ..config_win import Configuration, LinuxPopen
 from ..model.target_win import Target, WPSState
 from ..model.client import Client
 
@@ -101,8 +101,7 @@ class Airodump(Dependency):
 
         # Start the process
         # self.pid = Process(command, devnull=True)
-        self.pid = 'airodump_ng_pid'
-        Configuration.linux.DoPopen(command, rest=self.pid)
+        self.process = Process(command, devnull=True)
         return self
 
     def __exit__(self, type2, value, traceback):
@@ -112,7 +111,7 @@ class Airodump(Dependency):
         """
         # Kill the process
         # self.pid.interrupt()
-        Configuration.linux.os_kill_pid(self.pid)
+        Configuration.linux.os_kill_pid(self.process.pid)
 
         if self.delete_existing_files:
             self.delete_airodump_temp_files(self.output_file_prefix)
@@ -130,7 +129,7 @@ class Airodump(Dependency):
                 continue
 
             if endswith is None or fil.endswith(endswith):
-                result.append(os.path.join(temp, fil))
+                result.append(Configuration.linux.join(temp, fil))
 
         return result
 
@@ -365,7 +364,7 @@ class Airodump(Dependency):
             self.decloaking = True
             self.decloaked_times[target3.bssid] = now
             if Configuration.verbose > 1:
-                from ..util.color import Color
+                from ..util.color_win import Color
                 Color.pe('{C} [?] Deauthing %s (broadcast & %d clients){W}' % (target3.bssid, len(target3.clients)))
 
             # Deauth broadcast
@@ -385,7 +384,7 @@ if __name__ == '__main__':
 
         sleep(7)
 
-        from ..util.color import Color
+        from ..util.color_win import Color
 
         targets = airodump.get_targets()
         for idx, target in enumerate(targets, start=1):

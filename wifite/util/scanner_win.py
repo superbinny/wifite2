@@ -47,7 +47,7 @@ class Scanner(object):
 
                 while True:
                     # if airodump.pid.poll() is not None:
-                    poll = Configuration.linux.poll(airodump.pid)
+                    poll = Configuration.linux.poll(airodump.process.result_id)
                     if poll is not None:
                         return True  # Airodump process died
 
@@ -58,7 +58,7 @@ class Scanner(object):
                         return True  # We found the target we want
 
                     # if airodump.pid.poll() is not None:
-                    poll = Configuration.linux.poll(airodump.pid)
+                    poll = Configuration.linux.poll(airodump.process.result_id)
                     if poll is not None:
                         return True  # Airodump process died
 

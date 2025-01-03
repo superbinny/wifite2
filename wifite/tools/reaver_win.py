@@ -1,4 +1,4 @@
-import os
+# import os
 import re
 import time
 
@@ -35,10 +35,11 @@ class Reaver(Attack, Dependency):
         self.crack_result = None
 
         self.output_filename = Configuration.temp('reaver.out')
-        if os.path.exists(self.output_filename):
-            os.remove(self.output_filename)
+        if Configuration.linux.exists(self.output_filename):
+            Configuration.linux.remove_file(self.output_filename)
 
-        self.output_write = open(self.output_filename, 'a')
+        self.output_write = 'fhandle_reaver_out'
+        Configuration.linux.open(self.output_filename, 'a', fhandle=self.output_write)
 
         self.reaver_cmd = [
             'reaver',
@@ -78,7 +79,7 @@ class Reaver(Attack, Dependency):
 
         # Clean up open file handle
         if self.output_write:
-            self.output_write.close()
+            Configuration.linux.close(self.output_write)
 
         return self.crack_result is not None
 
@@ -339,10 +340,11 @@ class Reaver(Attack, Dependency):
             return ''
 
         if self.output_write:
-            self.output_write.flush()
+            Configuration.linux.flush(self.output_write)
 
-        with open(self.output_filename, 'r') as fid:
-            stdout = fid.read()
+        # with open(self.output_filename, 'r') as fid:
+        #     stdout = fid.read()
+        stdout = Configuration.linux.readfile(self.output_filename, 'r')
 
         if Configuration.verbose > 1:
             Color.pe('\n{P} [reaver:stdout] %s' % '\n [reaver:stdout] '.join(stdout.split('\n')))

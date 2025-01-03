@@ -7,7 +7,7 @@ from ..util.color_win import Color
 from ..util.process_win import Process
 from ..tools.hashcat_win import HcxPcapngTool
 
-import os
+# import os
 
 
 class John(Dependency):
@@ -53,7 +53,7 @@ class John(Dependency):
                     key = line.split(':')[1]
                     break
 
-        if os.path.exists(john_file):
-            os.remove(john_file)
+        if Configuration.linux.exists(john_file):
+            Configuration.linux.remove(john_file)
 
         return key

@@ -352,7 +352,7 @@ class Arguments(object):
                          metavar='[file]',
                          type=str,
                          help=Color.s(
-                             'File containing passwords for cracking (default: {G}%s{W})') % self.config.wordlist.filename)
+                             'File containing passwords for cracking (default: {G}%s{W})') % self.config.wordlist)
 
         wpa.add_argument('--wpadt',
                          action='store',

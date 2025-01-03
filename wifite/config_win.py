@@ -16,8 +16,14 @@ def init_linux(server_ip, server_port, isEmul=False, isSave=False):
 # 模拟远端的 popen
 from subprocess import PIPE
 class LinuxPopen():
-    def __init__(self, linux, command, stdout=PIPE, stderr=PIPE, cwd=None, bufsize=0, stdin=PIPE):
-        self.pid = linux.Popen(args=command, stdout=stdout, stderr=stderr, cwd=cwd, bufsize=bufsize, stdin=stdin)
+    def __init__(self, linux, command, stdout=PIPE, stderr=PIPE, cwd=None, bufsize=0, stdin=PIPE, result_id=None):
+        self.linux = linux
+        self.command = command
+        self.result_id, self.pid, self.output = self.linux.Popen(args=command, stdout=stdout, stderr=stderr, cwd=cwd, bufsize=bufsize, stdin=stdin, result_id=result_id)
+
+    def poll(self, result_id=None):
+        return self.linux.poll(result_id)
+
 
 class Configuration(object):
     """ Stores configuration variables and functions for Wifite. """
@@ -79,7 +85,7 @@ class Configuration(object):
     wep_pps = None
     wep_restart_aircrack = None
     wep_restart_stale_ivs = None
-    wordlist = FileType()
+    wordlist = None
     wpa_attack_timeout = None
     wpa_deauth_timeout = None
     wpa_filter = None
@@ -213,7 +219,6 @@ class Configuration(object):
 
         # Default dictionary for cracking
         cls.cracked_file = 'cracked.json'
-        cls.wordlist = FileType()
         wordlists = [
             './wordlist-probable.txt',  # Local file (ran from cloned repo)
             '/usr/share/dict/wordlist-probable.txt',  # setup.py with prefix=/usr
@@ -228,16 +233,26 @@ class Configuration(object):
             # 分两种情况，第一种位于当前目录下，而非 Linux 的根目录
             if wlist.startswith('/'):
                 if cls.linux.exists(wlist):
-                    cls.wordlist.filename = wlist
-                    cls.wordlist.is_remote = True
+                    cls.wordlist = wlist
                     # print(f'存在密码文件 {wlist}，位于远程')
                     break
             else:
-                if os.path.exists(wlist):
-                    # print(f'存在密码文件 {wlist}，位于本地')
-                    cls.wordlist.filename = wlist
-                    cls.wordlist.is_remote = False
-                    break
+                local_file = wlist.replace('/', '\\')
+                if os.path.exists(local_file):
+                    # print(f'存在密码文件 {wlist}，位于本地，拷贝到远程文件夹')
+                    # 将本地文件拷贝到远程的当前用户目录下：
+                    remote_file = cls.linux.join('${HOME}/data', wlist)
+                    if cls.linux.exists(remote_file):
+                        cls.wordlist = remote_file
+                        break
+                    else:
+                        par_dir = cls.linux.dirname(remote_file)
+                        if not cls.linux.exists(par_dir):
+                            cls.linux.makedirs(par_dir)
+                        cls.linux.copy_to_remote(local_file, remote_file)
+                        if cls.linux.exists(remote_file):
+                            cls.wordlist = remote_file
+                            break
         
         manufacturers = FileType()
         
@@ -736,5 +751,5 @@ class Configuration(object):
 
 
 if __name__ == '__main__':
-    Configuration.initialize(False)
+    Configuration.initialize(load_interface=False)
     print((Configuration.dump()))

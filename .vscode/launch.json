@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "wifite-win.py",
-            "args":"--ignore-negative-one --remote-server-port=192.168.192.130:12999 -pow=35"
+            "args":"--verbose --ignore-negative-one --remote-server-port=192.168.192.130:12999 -pow=35"
         }
     ]
 }

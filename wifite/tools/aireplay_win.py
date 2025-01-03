@@ -6,7 +6,7 @@ from ..config_win import Configuration
 from ..util.process_win import Process
 from ..util.timer import Timer
 
-import os
+# import os
 import time
 import re
 from threading import Thread
@@ -83,8 +83,10 @@ class Aireplay(Thread, Dependency):
                                                  attack_type,
                                                  client_mac=client_mac,
                                                  replay_file=replay_file)
+        self.output_write = f'fhandle_raireplay_{attack_type}_output'
+        Configuration.linux.open(self.output_file, 'a', fhandle=self.output_write)
         self.pid = Process(self.cmd,
-                           stdout=open(self.output_file, 'a'),
+                           stdout=self.output_write,
                            stderr=Process.devnull(),
                            cwd=Configuration.temp())
         self.start()
@@ -106,14 +108,20 @@ class Aireplay(Thread, Dependency):
         self.xor_percent = '0%'
         while self.pid.poll() is None:
             time.sleep(0.1)
-            if not os.path.exists(self.output_file):
+            if not Configuration.linux.exists(self.output_file):
                 continue
+
             # Read output file & clear output file
-            with open(self.output_file, 'r+') as fid:
-                lines = fid.read()
-                self.stdout += lines
-                fid.seek(0)
-                fid.truncate()
+            #with open(self.output_file, 'r+') as fid:
+            #    lines = fid.read()
+            #    self.stdout += lines
+            #    fid.seek(0)
+            #    fid.truncate()
+            fhandle='fhandletmp'
+            lines = Configuration.linux.readfile(self.output_file, 'r+', fhandle=fhandle)
+            self.stdout += lines
+            Configuration.linux.seek(fhandle, 0)
+            Configuration.linux.truncate(fhandle)
 
             if Configuration.verbose > 1 and lines.strip() != '':
                 from ..util.color import Color
@@ -339,7 +347,7 @@ class Aireplay(Thread, Dependency):
     def get_xor():
         """ Finds the last .xor file in the directory """
         xor = None
-        for fil in os.listdir(Configuration.temp()):
+        for fil in Configuration.linux.listdir(Configuration.temp()):
             if fil.startswith('replay_') and fil.endswith('.xor') or \
                     fil.startswith('fragment-') and fil.endswith('.xor'):
                 xor = fil
