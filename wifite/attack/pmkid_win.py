@@ -47,8 +47,11 @@ class AttackPMKID(Attack):
             if not re.match(file_re, pmkid_filename):
                 continue
 
-            with open(pmkid_filename, 'r') as pmkid_handle:
-                pmkid_hash = pmkid_handle.read().strip()
+            # with open(pmkid_filename, 'r') as pmkid_handle:
+            #     pmkid_hash = pmkid_handle.read().strip()
+            pmkid_hash = Configuration.linux.readfile(pmkid_filename, 'r')
+            pmkid_hash = pmkid_hash.strip()
+            if len(pmkid_hash) > 0:
                 if pmkid_hash.count('*') < 3:
                     continue
                 existing_bssid = pmkid_hash.split('*')[1].lower().replace(':', '')
@@ -248,7 +251,7 @@ class AttackPMKID(Attack):
         # t.start()
         # 由于 gevent 无法和线程共同使用，所以直接用  gevent
         t = gevent.spawn(self.dumptool_thread)
-        t.join()
+        # t.join()
 
         # Repeatedly run pcaptool & check output for hash for self.target.essid
         pmkid_hash = None
@@ -332,9 +335,10 @@ class AttackPMKID(Attack):
             Configuration.linux.makedirs(Configuration.wpa_handshake_dir)
 
         pmkid_file = self._extracted_from_save_pmkid_21('.22000')
-        with open(pmkid_file, 'w') as pmkid_handle:
-            pmkid_handle.write(pmkid_hash)
-            pmkid_handle.write('\n')
+        # with open(pmkid_file, 'w') as pmkid_handle:
+        #     pmkid_handle.write(pmkid_hash)
+        #     pmkid_handle.write('\n')
+        Configuration.linux.writefile(pmkid_file, pmkid_hash + '\n', mode='w')
 
         return pmkid_file
 

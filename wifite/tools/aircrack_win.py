@@ -49,8 +49,9 @@ class Aircrack(Dependency):
         if not self.is_cracked():
             raise Exception('Cracked file not found')
 
-        with open(self.cracked_file, 'r') as fid:
-            hex_raw = fid.read()
+        # with open(self.cracked_file, 'r') as fid:
+        #     hex_raw = fid.read()
+        hex_raw = Configuration.linux.readfile(self.cracked_file, 'r')
 
         return self._hex_and_ascii_key(hex_raw)
 
@@ -128,8 +129,9 @@ class Aircrack(Dependency):
 
         if not Configuration.linux.exists(key_file):
             return None
-        with open(key_file, 'r') as fid:
-            key = fid.read().strip()
+        # with open(key_file, 'r') as fid:
+        #     key = fid.read().strip()
+        key = Configuration.linux.readfile(key_file, 'r')
         Configuration.linux.remove(key_file)
 
         return key

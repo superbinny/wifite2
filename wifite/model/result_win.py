@@ -6,7 +6,7 @@ from ..config_win import Configuration
 
 # import os
 import time
-# from json import loads, dumps
+from json import loads, dumps
 
 
 class CrackResult(object):
@@ -15,8 +15,7 @@ class CrackResult(object):
     cracked_file = Configuration.cracked_file
     linux = None
 
-    def __init__(self, linux):
-        self.linux = linux
+    def __init__(self):
         self.date = int(time.time())
         self.readable_date = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.date))
 
@@ -43,9 +42,10 @@ class CrackResult(object):
         """ Adds this crack result to the cracked file and saves it. """
         name = CrackResult.cracked_file
         saved_results = []
-        if self.linux.exists(name):
-            with open(name, 'r') as fid:
-                text = fid.read()
+        if Configuration.linux.exists(name):
+            text = Configuration.linux.readfile(name)
+            # with open(name, 'r') as fid:
+            #    text = fid.read()
             try:
                 saved_results = loads(text)
             except Exception as e:
@@ -63,8 +63,9 @@ class CrackResult(object):
                 return
 
         saved_results.append(self.to_dict())
-        with open(name, 'w') as fid:
-            fid.write(dumps(saved_results, indent=2))
+        Configuration.linux.writefile(dumps(saved_results, indent=2))
+        # with open(name, 'w') as fid:
+        #    fid.write(dumps(saved_results, indent=2))
         Color.pl('{+} saved result to {C}%s{W} ({G}%d total{W})'
                  % (name, len(saved_results)))
 
@@ -72,7 +73,7 @@ class CrackResult(object):
     def display(cls, result_type):
         """ Show targets from results file """
         name = cls.cracked_file
-        if not cls.linux.exists(name):
+        if not Configuration.linux.exists(name):
             Color.pl('{!} {O}file {C}%s{O} not found{W}' % name)
             return
 
@@ -118,11 +119,12 @@ class CrackResult(object):
     def load_all(cls):
         if not cls.linux.exists(cls.cracked_file):
             return []
-        with open(cls.cracked_file, 'r') as json_file:
-            try:
-                json = loads(json_file.read())
-            except ValueError:
-                return []
+        # with open(cls.cracked_file, 'r') as json_file:
+        data = Configuration.linux.readfile(cls.cracked_file)
+        try:
+            json = loads(data)
+        except ValueError:
+            return []
         return json
 
     @classmethod

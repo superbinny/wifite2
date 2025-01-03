@@ -86,7 +86,7 @@ class Bully(Attack, Dependency):
             # t.daemon = True
             # t.start()
             t = gevent.spawn(target=self.parse_line_thread)
-            t.join()
+            # t.join()
 
             try:
                 self._run(airodump)

@@ -85,7 +85,7 @@ class Aireplay(Dependency):
                                                  attack_type,
                                                  client_mac=client_mac,
                                                  replay_file=replay_file)
-        self.output_write = f'fhandle_raireplay_{attack_type}_output'
+        self.output_write = f'fhandle_raireplay_{attack_type}_output' + Configuration.generate_random_string(6)
         Configuration.linux.open(self.output_file, 'a', fhandle=self.output_write)
         self.pid = Process(self.cmd,
                            stdout=self.output_write,
@@ -93,7 +93,7 @@ class Aireplay(Dependency):
                            cwd=Configuration.temp())
         # self.start()
         t = gevent.spawn(target=self.run)
-        t.join()
+        # t.join()
 
     def is_running(self):
         return self.pid.poll() is None

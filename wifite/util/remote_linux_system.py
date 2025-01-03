@@ -164,7 +164,7 @@ class remote_linux_system():
         return result
 
     def exec_cmd_ret(self, cmd, _hash=None):
-        print('  ======> Run command :%s' % cmd)
+        # print('  ======> Run command :%s' % cmd)
         if _hash is None:
             _hash = cmd
 
@@ -175,7 +175,7 @@ class remote_linux_system():
             try:
                 result_id, result = self.client.exec_cmd_ret(cmd, async_=True)
                 if result_id is None:
-                    print('  <===!!! Get command %s Error :%s' % (cmd, result))
+                    # print('  <===!!! Get command %s Error :%s' % (cmd, result))
                     if cmd.endswith('poll()'):
                         result = -1
                     else:
@@ -190,7 +190,7 @@ class remote_linux_system():
             self.serial.save(_hash, result)
         # Wait for the result.   If the server encountered an error,
         # an speedy.RemoteException will be thrown.
-        print('  <====== Get command :%s' % cmd)
+        # print('  <====== Get command :%s' % cmd)
         return result
     
     def Do(self, cmd, _hash=None):
@@ -446,7 +446,8 @@ DN = open(os.devnull, 'w')
     def read(self, fhandle):
         return self.exec_cmd_ret(f"{fhandle}.read()")
 
-    def readfile(self, p, mode='r', encoding='utf-8', fhandle='fhandle'):
+    def readfile(self, p, mode='r', encoding='utf-8'):
+        fhandle = 'fhandle' + remote_linux_system.generate_random_string(6)
         if type(p) is FileType:
             filename = p.filename
             if not p.is_remote:
@@ -462,6 +463,21 @@ DN = open(os.devnull, 'w')
         self.close(fhandle=fhandle)
         return lines
 
+    def writefile(self, p, data, mode='wb', encoding='utf-8'):
+        fhandle = 'fhandle' + remote_linux_system.generate_random_string(6)
+        if type(p) is FileType:
+            filename = p.filename
+            if not p.is_remote:
+                with open(filename, mode, encoding=encoding) as f:
+                    lines = f.write(data)
+                    f.close()
+                return True
+        else:
+            filename = p
+
+        self.client.set_file(filename, data, overwrite=True, async_=True)
+        return self.exists(filename)
+    
     def clearfile(self, filename, fhandle='fhandle'):
         self.open(filename, 'w', fhandle=fhandle)
         self.close(fhandle=fhandle)

@@ -106,7 +106,8 @@ class HcxDumpTool(Dependency):
             '-c', str(target.channel) + 'a',
             '-w', pcapng_file
         ]
-        self.proc = Process(command)
+        # 如果不加devnull，程序会等待并且可能造成超时
+        self.proc = Process(command, devnull=True)
 
     def poll(self):
         return self.proc.poll()

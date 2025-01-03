@@ -98,8 +98,9 @@ class CrackHelper:
     def is_cracked(cls, file):
         if not Configuration.linux.exists(Configuration.cracked_file):
             return False
-        with open(Configuration.cracked_file) as f:
-            json = loads(f.read())
+        # with open(Configuration.cracked_file) as f:
+        data = Configuration.linux.readfile(Configuration.cracked_file)
+        json = loads(data)
         if json is None:
             return False
         for result in json:

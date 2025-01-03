@@ -203,9 +203,9 @@ class Process(object):
                 Color.pe('\n {C}[?] {W} sending interrupt to Process %s (%s)' % (result_id, cmd))
 
         if pid:
-            Configuration.linux.kill_pid(pid, 'signal.SIGINT')
+            Configuration.linux.kill_pid(pid, 'SIGINT')
         else:
-            Configuration.linux.kill(result_id, 'signal.SIGINT')
+            Configuration.linux.kill(result_id, 'SIGINT')
 
     def running_time(self):
         """ Returns number of seconds since process was started """
@@ -217,8 +217,6 @@ class Process(object):
             If process fails to exit within `wait_time` seconds, terminates it.
         """
         try:
-            if result_id is None:
-                result_id = self.result_id
             self._extracted_from_interrupt_7(wait_time)
         except OSError as e:
             if 'No such process' in e.__str__():
