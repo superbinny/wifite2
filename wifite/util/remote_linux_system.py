@@ -122,7 +122,14 @@ class remote_linux_system():
         except Exception as ex:
             remote_linux_system.pexception(ex, call_from='get_remote_file_md5')
         return ret
-    
+
+    def get_result(self, result):
+        try:
+            result_id, ret = self.client.get_result(result, async_=True)
+        except Exception as ex:
+            remote_linux_system.pexception(ex, call_from='get_result')
+        return ret
+   
     def reset(self):
         self.ResetNamespace()
         
@@ -152,12 +159,12 @@ class remote_linux_system():
             if timeout and seconds_passed > timeout:
                 self.kill(result_id)
                 raise TimeoutError(cmd, timeout)
-            time.sleep(0.1)
         if self.IsSave and not self.Emul:
             self.serial.save(_hash, result)
         return result
 
     def exec_cmd_ret(self, cmd, _hash=None):
+        print('  ======> Run command :%s' % cmd)
         if _hash is None:
             _hash = cmd
 
@@ -168,7 +175,7 @@ class remote_linux_system():
             try:
                 result_id, result = self.client.exec_cmd_ret(cmd, async_=True)
                 if result_id is None:
-                    print('Remote error: %s' % result)
+                    print('  <===!!! Get command %s Error :%s' % (cmd, result))
                     return None
             except Exception as ex:
                 remote_linux_system.pexception(ex, call_from='exec_cmd_ret', ex_info=cmd)
@@ -177,68 +184,25 @@ class remote_linux_system():
             self.serial.save(_hash, result)
         # Wait for the result.   If the server encountered an error,
         # an speedy.RemoteException will be thrown.
+        print('  <====== Get command :%s' % cmd)
         return result
     
-    @classmethod
-    def pexception(cls, exception, call_from=None, ex_info=None):
-        """Prints an exception. Includes stack trace if necessary."""
-        if call_from is None:
-            _call_from = ''
-        else:
-            _call_from = f', {{R}}From: {{O}}{call_from}'
-
-        if ex_info is None:
-            _ex_info = ''
-        else:
-            _ex_info = f', {{R}}Ext: {{O}}{ex_info}'
-            
-        Color.pl('\n{!} {R}Error: {O}%s%s%s' % (str(exception), _call_from, _ex_info))
-
-        # Don't dump trace for the "no targets found" case.
-        if exception is zerorpc.RemoteError:
-            print('Error: exec_cmd_ret zerorpc.RemoteError')
-        elif exception is zerorpc.TimeoutExpired:
-            print('Error: exec_cmd_ret zerorpc.TimeoutExpired')
-        elif exception is gevent.exceptions.LoopExit:
-            print('Error: exec_cmd_ret gevent.exceptions.LoopExit')
-        elif exception is zerorpc.exceptions.LostRemote:
-            print('Error: exec_cmd_ret zerorpc.exceptions.LostRemote')
-
-        from ..config_win import Configuration
-        if Configuration.verbose > 0 or Configuration.print_stack_traces:
-            Color.pl('\n{!} {O}Full stack trace below')
-            from traceback import format_exc
-            Color.p('\n{!}    ')
-            err = format_exc().strip()
-            err = err.replace('\n', '\n{!} {C}   ')
-            err = err.replace('  File', '{W}File')
-            err = err.replace('  Exception: ', '{R}Exception: {O}')
-            Color.pl(err)
-
-    def get_result(self, result):
-        try:
-            result_id, ret = self.client.get_result(result, async_=True)
-        except Exception as ex:
-            remote_linux_system.pexception(ex, call_from='get_result')
-        return ret
-    
-    def Do(self, f, _hash=None):
+    def Do(self, cmd, _hash=None):
         if _hash is None:
-            _hash = f
+            _hash = cmd
+
         result = None
         if self.Emul:
             result = self.serial.load(_hash)
         else:
-            # print 'exec_cmd:\t', f
+            # print 'exec_cmd:\t', cmd
             try:
-                result = self.client.exec_cmd(f, async_=True)
+                result = self.client.exec_cmd(cmd, async_=True)
             except Exception as ex:
-                remote_linux_system.pexception(ex, call_from='Do')
+                remote_linux_system.pexception(ex, call_from='Do', ex_info=cmd)
 
         if self.IsSave and not self.Emul:
             self.serial.save(_hash, result)
-
-        return result == f
 
     def ResetNamespace(self):
         # print 'doCommand:\t', f
@@ -360,10 +324,13 @@ DN = open(os.devnull, 'w')
         return self.exec_cmd_ret(f"os.path.isfile('{f}')")
     
     def seek(self, f, num):
-        return self.Do(f"{f}.seek({num})")
+        return self.exec_cmd_ret(f"{f}.seek({num})")
+    
+    def flush(self, f):
+        return self.exec_cmd_ret(f"{f}.flush()")
     
     def truncate(self, f):
-        return self.Do(f"{f}.truncate()")
+        return self.exec_cmd_ret(f"{f}.truncate()")
 
     def isdir(self, f):
         return self.exec_cmd_ret(f"os.path.isdir('{f}')")
@@ -681,9 +648,18 @@ DN = open(os.devnull, 'w')
     
     def stdout_readline(self, result_id):
         return self.exec_cmd_ret('%s.stdout.readline()' % result_id)
+    
+    def stderr_readline(self, result_id):
+        return self.exec_cmd_ret('%s.stderr.readline()' % result_id)
 
     def stdout_read(self, result_id):
         return self.exec_cmd_ret('%s.stdout.read()' % result_id)
+
+    def stdin_write(self, result_id, data):
+        return self.exec_cmd_ret("%s.stdin.write('%s')" % (result_id, data))
+
+    def stdin_flush(self, result_id):
+        return self.exec_cmd_ret("%s.stdin.flush()" % result_id)
 
     def poll(self, result_id):
         return self.exec_cmd_ret('%s.poll()' % result_id)
@@ -862,6 +838,44 @@ DN = open(os.devnull, 'w')
             remote_linux_system.bnSaveToHex(file_name + '.error', data, encoding)
             return False
         return True
+    
+    @classmethod
+    def pexception(cls, exception, call_from=None, ex_info=None):
+        """Prints an exception. Includes stack trace if necessary."""
+        if call_from is None:
+            _call_from = ''
+        else:
+            _call_from = f', {{R}}From: {{O}}{call_from}'
+
+        if ex_info is None:
+            _ex_info = ''
+        else:
+            _ex_info = f', {{R}}Ext: {{O}}{ex_info}'
+            
+        Color.pl('\n{!} {R}Error: {O}%s%s%s%s' % (str(type(exception)), exception.args[0], _call_from, _ex_info))
+
+        # Don't dump trace for the "no targets found" case.
+        if type(exception) is zerorpc.RemoteError:
+            print('Error: exec_cmd_ret zerorpc.RemoteError')
+        elif type(exception) is zerorpc.TimeoutExpired:
+            print('Error: exec_cmd_ret zerorpc.TimeoutExpired')
+        elif type(exception) is gevent.exceptions.LoopExit:
+            print('Error: exec_cmd_ret gevent.exceptions.LoopExit')
+            return # 不打印堆栈，说明连接失效
+        elif type(exception) is zerorpc.exceptions.LostRemote:
+            print('Error: exec_cmd_ret zerorpc.exceptions.LostRemote')
+            return # 不打印堆栈，说明连接失效
+
+        from ..config_win import Configuration
+        if Configuration.verbose > 0 or Configuration.print_stack_traces:
+            Color.pl('\n{!} {O}Full stack trace below')
+            from traceback import format_exc
+            Color.p('\n{!}    ')
+            err = format_exc().strip()
+            err = err.replace('\n', '\n{!} {C}   ')
+            err = err.replace('  File', '{W}File')
+            err = err.replace('  Exception: ', '{R}Exception: {O}')
+            Color.pl(err)
 
 if __name__ == '__main__':
     server_ip = '127.0.0.1'

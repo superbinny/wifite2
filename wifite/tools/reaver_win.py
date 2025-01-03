@@ -8,7 +8,7 @@ from ..config_win import Configuration
 from ..model.attack_win import Attack
 from ..model.wps_result_win import CrackResultWPS
 from ..util.color_win import Color
-from ..util.process import Process
+from ..util.process_win import Process
 from ..util.timer import Timer
 
 
@@ -36,9 +36,9 @@ class Reaver(Attack, Dependency):
 
         self.output_filename = Configuration.temp('reaver.out')
         if Configuration.linux.exists(self.output_filename):
-            Configuration.linux.remote(self.output_filename)
+            Configuration.linux.remove(self.output_filename)
 
-        self.output_write = 'fhandle_reaver_out'
+        self.output_write = 'fhandle_reaver_out_' + Configuration.linux.generate_random_string(6)
         Configuration.linux.open(self.output_filename, 'a', fhandle=self.output_write)
 
         self.reaver_cmd = [

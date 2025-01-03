@@ -121,6 +121,7 @@ class Process(object):
         self.popen = LinuxPopen(Configuration.linux, command, stdout=sout, stderr=serr, stdin=stdin, cwd=cwd, bufsize=bufsize, result_id=self.result_id)
         self.result_id = self.popen.result_id
         self.pid = self.popen.pid
+        time.sleep(0.1)
 
      # def __del__(self):
      #     """
@@ -146,15 +147,20 @@ class Process(object):
         return self.err
 
     def stdoutln(self):
-        return self.pid.stdout.readline()
+        # return self.pid.stdout.readline()
+        return Configuration.linux.stdout_readline(self.result_id)
 
     def stderrln(self):
-        return self.pid.stderr.readline()
+        # return self.pid.stderr.readline()
+        return Configuration.linux.stderr_readline(self.result_id)
 
     def stdin(self, text):
-        if self.pid.stdin:
-            self.pid.stdin.write(text.encode('utf-8'))
-            self.pid.stdin.flush()
+        # if self.pid.stdin:
+        #     self.pid.stdin.write(text.encode('utf-8'))
+        #     self.pid.stdin.flush()
+        if self.popen.stdin == 'PIPE':
+            Configuration.linux.stdin_write(self.result_id, text.encode('utf-8'))
+            Configuration.linux.stdin_flush(self.result_id)
 
     def get_output(self):
         """ Waits for process to finish, sets stdout & stderr """

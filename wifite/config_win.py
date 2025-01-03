@@ -26,6 +26,7 @@ class LinuxPopen():
         self.linux = linux
         self.command = command
         self.result_id, self.pid, self.output = self.linux.Popen(args=command, stdout=stdout, stderr=stderr, cwd=cwd, bufsize=bufsize, stdin=stdin, result_id=result_id)
+        self.stdin = stdin
 
     def poll(self, result_id=None):
         return self.linux.poll(result_id)
@@ -735,7 +736,7 @@ class Configuration(object):
             return
         if cls.linux.exists(cls.temp_dir):
             for f in cls.linux.listdir(cls.temp_dir):
-                cls.linux.remote(cls.temp_dir + f)
+                cls.linux.remove(cls.temp_dir + f)
             cls.linux.rmdir(cls.temp_dir)
 
     @classmethod

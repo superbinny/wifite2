@@ -8,7 +8,8 @@ from ..util.color_win import Color
 from ..util.timer import Timer
 from ..model.pmkid_result_win import CrackResultPMKID
 from ..tools.airodump_win import Airodump
-from threading import Thread
+# from threading import Thread
+import gevent
 # import os
 import time
 import re
@@ -243,8 +244,11 @@ class AttackPMKID(Attack):
         self.timer = Timer(Configuration.pmkid_timeout)
 
         # Start hcxdumptool
-        t = Thread(target=self.dumptool_thread)
-        t.start()
+        # t = Thread(target=self.dumptool_thread)
+        # t.start()
+        # 由于 gevent 无法和线程共同使用，所以直接用  gevent
+        t = gevent.spawn(self.dumptool_thread)
+        t.join()
 
         # Repeatedly run pcaptool & check output for hash for self.target.essid
         pmkid_hash = None

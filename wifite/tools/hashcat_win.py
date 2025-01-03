@@ -6,6 +6,7 @@ from ..config_win import Configuration
 from ..util.process_win import Process
 from ..util.color_win import Color
 
+import time
 # import os
 
 hccapx_autoremove = False  # change this to True if you want the hccapx files to be automatically removed
@@ -97,7 +98,7 @@ class HcxDumpTool(Dependency):
 
     def __init__(self, target, pcapng_file):
         if Configuration.linux.exists(pcapng_file):
-            Configuration.linux.remote(pcapng_file)
+            Configuration.linux.remove(pcapng_file)
 
         command = [
             'hcxdumptool',
@@ -128,7 +129,7 @@ class HcxPcapngTool(Dependency):
     def generate_hccapx_file(handshake, show_command=False):
         hccapx_file = Configuration.temp('generated.hccapx')
         if Configuration.linux.exists(hccapx_file):
-            Configuration.linux.remote(hccapx_file)
+            Configuration.linux.remove(hccapx_file)
 
         command = [
             'hcxpcapngtool',
@@ -151,7 +152,8 @@ class HcxPcapngTool(Dependency):
     def generate_john_file(handshake, show_command=False):
         john_file = Configuration.temp('generated.john')
         if Configuration.linux.exists(john_file):
-            Configuration.linux.remote(john_file)
+            time.sleep(0.1)
+            Configuration.linux.remove(john_file)
 
         command = [
             'hcxpcapngtool',
@@ -172,12 +174,14 @@ class HcxPcapngTool(Dependency):
 
     def get_pmkid_hash(self, pcapng_file):
         if Configuration.linux.exists(self.pmkid_file):
-            Configuration.linux.remote(self.pmkid_file)
+            time.sleep(0.1)
+            Configuration.linux.remove(self.pmkid_file)
 
         command = 'hcxpcapngtool -o ' + self.pmkid_file + " " + pcapng_file
         hcxpcap_proc = Process(command)
         # hcxpcap_proc.wait()
 
+        time.sleep(0.1)
         if not Configuration.linux.exists(self.pmkid_file):
             return None
 
@@ -197,5 +201,5 @@ class HcxPcapngTool(Dependency):
                 matching_pmkid_hash = line
                 break
 
-        Configuration.linux.remote(self.pmkid_file)
+        Configuration.linux.remove(self.pmkid_file)
         return matching_pmkid_hash

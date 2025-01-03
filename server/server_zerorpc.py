@@ -56,14 +56,26 @@ class MyServer():
         letters = string.ascii_letters + string.digits
         return ''.join(random.choice(letters) for _ in range(length))
     
+    def print_error(self, request, ex):
+        ex_class_name = str(type(ex))
+        ex_class_name = ex_class_name.replace("<class '", '')
+        ex_class_name = ex_class_name.replace("'>", '')
+        desc = f'Cmd={request}, Class={ex_class_name}, Msg={ex.args[0]}'
+        print('Error: exec_cmd_ret=>%s' % desc)
+        return desc
+
     def exec_cmd_ret(self, request):
         result_id = 'result' + MyServer.generate_random_string(6)
         cmd = f'{result_id}=' + request
         try:
             exec(cmd, self.globals, self.locals)
+        except NameError:
+            if "Popen" in cmd:
+                cmd = cmd
+            desc = self.print_error(request, ex)
+            return None, desc
         except Exception as ex:
-            desc = str(type(ex)) + ":" + ex.args[0]
-            print('Error: exec_cmd_ret %s' % desc)
+            desc = self.print_error(request, ex)
             if result_id in self.locals:
                 self.locals.pop(result_id)
             return None, desc

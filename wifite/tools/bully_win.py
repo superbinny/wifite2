@@ -12,8 +12,8 @@ from ..config_win import Configuration
 
 import time
 import re
-from threading import Thread
-
+# from threading import Thread
+import gevent
 
 class Bully(Attack, Dependency):
     dependency_required = False
@@ -82,9 +82,11 @@ class Bully(Attack, Dependency):
                                       cwd=Configuration.temp())
 
             # Start bully status thread
-            t = Thread(target=self.parse_line_thread)
-            t.daemon = True
-            t.start()
+            # t = Thread(target=self.parse_line_thread)
+            # t.daemon = True
+            # t.start()
+            t = gevent.spawn(target=self.parse_line_thread)
+            t.join()
 
             try:
                 self._run(airodump)

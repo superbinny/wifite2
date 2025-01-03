@@ -8,62 +8,65 @@ from ..config_win import Configuration
 from ..tools.airodump_win import Airodump
 from ..util.color_win import Color
 from shlex import quote as shlex_quote
+
 # 原来程序中，通过 Ctrl+C 来终止程序，这容易造成程序早退并且可能引起 zerorpc 通讯中断
 # 所以修改为 Ctrl+P 来终止扫描，用线程的方式，而不是出错的方式
-import threading
-import win32con
-import ctypes
-import ctypes.wintypes
-# pip install python_vk_codes
-# 键盘编码：https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
-# Electron中使用Node-ffi模拟键鼠操作：https://cloud.tencent.com/developer/article/1625596
-
 exitControl_command = False
 pauseControl_command = False
 
-def hotKeyMain():
-    # 可以监控，退出用 CTRL-Q
-    global pauseControl_command
-    global exitControl_command
-    user32 = ctypes.windll.user32
-    cHotKeyCtrlP = 1008 # 热键的标识id
-    cHotKeyCtrlQ = cHotKeyCtrlP + 1
-    VK_P = 0x50
-    VK_Q = 0x51
-    while(True):
-        if not user32.RegisterHotKey(None, cHotKeyCtrlP, win32con.MOD_CONTROL, VK_P): # Ctrl+P=暂停扫描
-            Color.pl('    {!} {O}Unable to register id: %d' % cHotKeyCtrlP)
-        if not user32.RegisterHotKey(None, cHotKeyCtrlQ, win32con.MOD_CONTROL, VK_Q): # Ctrl+Q=退出程序
-            Color.pl('    {!} {O}Unable to register id%d' % cHotKeyCtrlQ)
+if Configuration.is_windows:
+    import threading
+    # 在 WSL 中可以用 pip install pypiwin32 代替部分功能
+    import win32con
+    import ctypes
+    import ctypes.wintypes
+    # pip install python_vk_codes
+    # 键盘编码：https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+    # Electron中使用Node-ffi模拟键鼠操作：https://cloud.tencent.com/developer/article/1625596
 
-        try:
-            msg = ctypes.wintypes.MSG()
-            if user32.GetMessageA(ctypes.byref(msg), None, 0, 0) != 0:
-                if msg.message == win32con.WM_HOTKEY:
-                    if msg.wParam == cHotKeyCtrlP:
-                        pauseControl_command = True
-                    elif msg.wParam == cHotKeyCtrlQ:
-                        exitControl_command = True
-                        return
-                user32.TranslateMessage(ctypes.byref(msg))
-                user32.DispatchMessageA(ctypes.byref(msg))
-        finally:
-            del msg
-            user32.UnregisterHotKey(None, cHotKeyCtrlP)
-            user32.UnregisterHotKey(None, cHotKeyCtrlQ)
+    def hotKeyMain():
+        # 可以监控，退出用 CTRL-Q
+        global pauseControl_command
+        global exitControl_command
+        user32 = ctypes.windll.user32
+        cHotKeyCtrlP = 1008 # 热键的标识id
+        cHotKeyCtrlQ = cHotKeyCtrlP + 1
+        VK_P = 0x50
+        VK_Q = 0x51
+        while(True):
+            if not user32.RegisterHotKey(None, cHotKeyCtrlP, win32con.MOD_CONTROL, VK_P): # Ctrl+P=暂停扫描
+                Color.pl('    {!} {O}Unable to register id: %d' % cHotKeyCtrlP)
+            if not user32.RegisterHotKey(None, cHotKeyCtrlQ, win32con.MOD_CONTROL, VK_Q): # Ctrl+Q=退出程序
+                Color.pl('    {!} {O}Unable to register id%d' % cHotKeyCtrlQ)
 
-# 监控 Ctrl+P 的线程
-class PauseHotKey(threading.Thread):
-    # 来自：https://blog.csdn.net/lantuxin/article/details/82385548
-    # python程序监听windows窗口热键(快捷键)
-    def __init__(self, name):
-        threading.Thread.__init__(self)
-        self.name = name
+            try:
+                msg = ctypes.wintypes.MSG()
+                if user32.GetMessageA(ctypes.byref(msg), None, 0, 0) != 0:
+                    if msg.message == win32con.WM_HOTKEY:
+                        if msg.wParam == cHotKeyCtrlP:
+                            pauseControl_command = True
+                        elif msg.wParam == cHotKeyCtrlQ:
+                            exitControl_command = True
+                            return
+                    user32.TranslateMessage(ctypes.byref(msg))
+                    user32.DispatchMessageA(ctypes.byref(msg))
+            finally:
+                del msg
+                user32.UnregisterHotKey(None, cHotKeyCtrlP)
+                user32.UnregisterHotKey(None, cHotKeyCtrlQ)
 
-    def run(self):
-        print ("\n***start of "+str(self.name)+"***\n")
-        hotKeyMain()
-        print ("\n***end of "+str(self.name)+"***\n")
+    # 监控 Ctrl+P 的线程
+    class PauseHotKey(threading.Thread):
+        # 来自：https://blog.csdn.net/lantuxin/article/details/82385548
+        # python程序监听windows窗口热键(快捷键)
+        def __init__(self, name):
+            threading.Thread.__init__(self)
+            self.name = name
+
+        def run(self):
+            # print ("\n***start of "+str(self.name)+"***\n")
+            hotKeyMain()
+            # print ("\n***end of "+str(self.name)+"***\n")
 
 class Scanner(object):
     """ Scans wifi networks & provides menu for selecting targets """
@@ -80,8 +83,9 @@ class Scanner(object):
         self.targets = []
         self.target = None  # Target specified by user (based on ESSID/BSSID)
         self.err_msg = None
-        thread_pause_hotKey = PauseHotKey("thread_pause_hotKey")
-        thread_pause_hotKey.start()
+        if Configuration.is_windows:
+            thread_pause_hotKey = PauseHotKey("thread_pause_hotKey")
+            thread_pause_hotKey.start()
 
     def print_and_move_up(text):
         sys.stdout.write(f'\r{text}\x1B[A')

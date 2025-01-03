@@ -9,7 +9,8 @@ from ..util.timer import Timer
 # import os
 import time
 import re
-from threading import Thread
+# from threading import Thread
+import gevent
 
 
 class WEPAttackType:
@@ -55,8 +56,9 @@ class WEPAttackType:
     def __str__(self):
         return self.name
 
-
-class Aireplay(Thread, Dependency):
+# zerorpc 不能使用线程，改用 gevent
+# class Aireplay(Thread, Dependency):
+class Aireplay(Dependency):
     dependency_required = True
     dependency_name = 'aireplay-ng'
     dependency_url = 'https://www.aircrack-ng.org/install.html'
@@ -89,7 +91,9 @@ class Aireplay(Thread, Dependency):
                            stdout=self.output_write,
                            stderr=Process.devnull(),
                            cwd=Configuration.temp())
-        self.start()
+        # self.start()
+        t = gevent.spawn(target=self.run)
+        t.join()
 
     def is_running(self):
         return self.pid.poll() is None
