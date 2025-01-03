@@ -87,7 +87,7 @@ class remote_linux_system():
     
     @staticmethod
     def generate_random_string(length):
-        letters = string.ascii_letters + string.digits + string.punctuation
+        letters = string.ascii_letters + string.digits
         return ''.join(random.choice(letters) for _ in range(length))
 
     def get_connect(self):
@@ -342,7 +342,7 @@ DN = open(os.devnull, 'w')
     def unlink(self, filename):
         self.Do("os.unlink('%s')" % filename)
 
-    def name(self, filename):
+    def name(self):
         self.exec_cmd_ret("os.name")
 
     def basename(self, fname):

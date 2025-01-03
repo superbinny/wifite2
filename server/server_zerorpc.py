@@ -53,7 +53,7 @@ class MyServer():
 
     @staticmethod
     def generate_random_string(length):
-        letters = string.ascii_letters + string.digits + string.punctuation
+        letters = string.ascii_letters + string.digits
         return ''.join(random.choice(letters) for _ in range(length))
     
     def exec_cmd_ret(self, request):
