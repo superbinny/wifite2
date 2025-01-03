@@ -62,10 +62,11 @@ class MyServer():
         try:
             exec(cmd, self.globals, self.locals)
         except Exception as ex:
-            print('Error: exec_cmd_ret %s' % ex)
+            desc = str(type(ex)) + ":" + ex.args[0]
+            print('Error: exec_cmd_ret %s' % desc)
             if result_id in self.locals:
                 self.locals.pop(result_id)
-            return None, str(type(ex)) + ":" + ex.args[0]
+            return None, desc
         return result_id, self.locals[result_id]
     
     def get_result(self, result):
