@@ -36,7 +36,7 @@ class Reaver(Attack, Dependency):
 
         self.output_filename = Configuration.temp('reaver.out')
         if Configuration.linux.exists(self.output_filename):
-            Configuration.linux.remove_file(self.output_filename)
+            Configuration.linux.remote(self.output_filename)
 
         self.output_write = 'fhandle_reaver_out'
         Configuration.linux.open(self.output_filename, 'a', fhandle=self.output_write)

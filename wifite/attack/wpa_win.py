@@ -11,7 +11,7 @@ from ..util.timer import Timer
 from ..model.handshake_win import Handshake
 from ..model.wpa_result_win import CrackResultWPA
 import time
-import os
+# import os
 import re
 from shutil import copy
 
@@ -60,19 +60,19 @@ class AttackWPA(Attack):
             return self._extracted_from_run_30(
                 '{!} {O}Not cracking handshake because wordlist ({R}--dict{O}) is not set'
             )
-        elif not os.path.exists(Configuration.wordlist):
+        elif not Configuration.linux.exists(Configuration.wordlist):
             Color.pl('{!} {O}Not cracking handshake because wordlist {R}%s{O} was not found' % Configuration.wordlist)
             self.success = False
             return False
 
         Color.pl('\n{+} {C}Cracking WPA Handshake:{W} Running {C}aircrack-ng{W} with '
-                 '{C}%s{W} wordlist' % os.path.split(Configuration.wordlist)[-1])
+                 '{C}%s{W} wordlist' % Configuration.linux.split(Configuration.wordlist)[-1])
 
         # Crack it
         key = Aircrack.crack_handshake(handshake, show_command=False)
         if key is None:
             Color.pl('{!} {R}Failed to crack handshake: {O}%s{R} did not contain password{W}' %
-                     Configuration.wordlist.split(os.sep)[-1])
+                     Configuration.wordlist.split(Configuration.linux.sep)[-1])
             self.success = False
         else:
             Color.pl('{+} {G}Cracked WPA Handshake{W} PSK: {G}%s{W}\n' % key)
@@ -155,7 +155,7 @@ class AttackWPA(Attack):
                 # There is no handshake
                 handshake = None
                 # Delete copied .cap file in temp to save space
-                os.remove(temp_file)
+                Configuration.linux.remove(temp_file)
 
                 # Look for new clients
                 airodump_target = self.wait_for_target(airodump)
@@ -190,7 +190,7 @@ class AttackWPA(Attack):
 
     @staticmethod
     def load_handshake(bssid, essid):
-        if not os.path.exists(Configuration.wpa_handshake_dir):
+        if not Configuration.linux.exists(Configuration.wpa_handshake_dir):
             return None
 
         if essid:
@@ -201,9 +201,9 @@ class AttackWPA(Attack):
         date = r'\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}'
         get_filename = re.compile(r'handshake_%s_%s_%s\.cap' % (essid_safe, bssid_safe, date))
 
-        for filename in os.listdir(Configuration.wpa_handshake_dir):
-            cap_filename = os.path.join(Configuration.wpa_handshake_dir, filename)
-            if os.path.isfile(cap_filename) and re.match(get_filename, filename):
+        for filename in Configuration.linux.listdir(Configuration.wpa_handshake_dir):
+            cap_filename = Configuration.linux.join(Configuration.wpa_handshake_dir, filename)
+            if Configuration.linux.isfile(cap_filename) and re.match(get_filename, filename):
                 return Handshake(capfile=cap_filename, bssid=bssid, essid=essid)
 
         return None
@@ -216,8 +216,8 @@ class AttackWPA(Attack):
                 handshake - Instance of Handshake containing bssid, essid, capfile
         """
         # Create handshake dir
-        if not os.path.exists(Configuration.wpa_handshake_dir):
-            os.makedirs(Configuration.wpa_handshake_dir)
+        if not Configuration.linux.exists(Configuration.wpa_handshake_dir):
+            Configuration.linux.makedirs(Configuration.wpa_handshake_dir)
 
         # Generate filesystem-safe filename from bssid, essid and date
         if handshake.essid and type(handshake.essid) is str:
@@ -227,7 +227,7 @@ class AttackWPA(Attack):
         bssid_safe = handshake.bssid.replace(':', '-')
         date = time.strftime('%Y-%m-%dT%H-%M-%S')
         cap_filename = f'handshake_{essid_safe}_{bssid_safe}_{date}.cap'
-        cap_filename = os.path.join(Configuration.wpa_handshake_dir, cap_filename)
+        cap_filename = Configuration.linux.join(Configuration.wpa_handshake_dir, cap_filename)
 
         if Configuration.wpa_strip_handshake:
             Color.p('{+} {C}stripping{W} non-handshake packets, saving to {G}%s{W}...' % cap_filename)

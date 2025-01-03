@@ -23,10 +23,10 @@ class Wifite(object):
 
         Configuration.initialize(load_interface=False)
 
-        if Configuration.linux.os_name == 'nt':
+        if Configuration.linux.name == 'nt':
             Color.pl('{!} {R}error: {O}wifite{R} must be run under a {O}*NIX{W}{R} like OS')
             Configuration.exit_gracefully()
-        if Configuration.linux.os_getuid() != 0:
+        if Configuration.linux.getuid() != 0:
             Color.pl('{!} {R}error: {O}wifite{R} must be run as {O}root{W}')
             Color.pl('{!} {R}re-run with {O}sudo{W}')
             Configuration.exit_gracefully()

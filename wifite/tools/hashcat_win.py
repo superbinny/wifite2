@@ -98,7 +98,7 @@ class HcxDumpTool(Dependency):
     def __init__(self, target, pcapng_file):
         print('HcxDumpTool', pcapng_file)
         if Configuration.linux.exists(pcapng_file):
-            Configuration.linux.remove_file(pcapng_file)
+            Configuration.linux.remote(pcapng_file)
 
         command = [
             'hcxdumptool',
@@ -106,7 +106,6 @@ class HcxDumpTool(Dependency):
             '-c', str(target.channel) + 'a',
             '-w', pcapng_file
         ]
-
         self.proc = Process(command)
 
     def poll(self):
@@ -130,7 +129,7 @@ class HcxPcapngTool(Dependency):
     def generate_hccapx_file(handshake, show_command=False):
         hccapx_file = Configuration.temp('generated.hccapx')
         if Configuration.linux.exists(hccapx_file):
-            Configuration.linux.remove_file(hccapx_file)
+            Configuration.linux.remote(hccapx_file)
 
         command = [
             'hcxpcapngtool',
@@ -153,7 +152,7 @@ class HcxPcapngTool(Dependency):
     def generate_john_file(handshake, show_command=False):
         john_file = Configuration.temp('generated.john')
         if Configuration.linux.exists(john_file):
-            Configuration.linux.remove_file(john_file)
+            Configuration.linux.remote(john_file)
 
         command = [
             'hcxpcapngtool',
@@ -174,7 +173,7 @@ class HcxPcapngTool(Dependency):
 
     def get_pmkid_hash(self, pcapng_file):
         if Configuration.linux.exists(self.pmkid_file):
-            Configuration.linux.remove_file(self.pmkid_file)
+            Configuration.linux.remote(self.pmkid_file)
 
         command = 'hcxpcapngtool -o ' + self.pmkid_file + " " + pcapng_file
         hcxpcap_proc = Process(command)
@@ -199,5 +198,5 @@ class HcxPcapngTool(Dependency):
                 matching_pmkid_hash = line
                 break
 
-        Configuration.linux.remove_file(self.pmkid_file)
+        Configuration.linux.remote(self.pmkid_file)
         return matching_pmkid_hash

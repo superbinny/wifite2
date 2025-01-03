@@ -5,7 +5,7 @@ from .dependency_win import Dependency
 from .tshark_win import Tshark
 from .wash_win import Wash
 from ..util.process_win import Process
-from ..config_win import Configuration, LinuxPopen
+from ..config_win import Configuration
 from ..model.target_win import Target, WPSState
 from ..model.client import Client
 
@@ -111,7 +111,7 @@ class Airodump(Dependency):
         """
         # Kill the process
         # self.pid.interrupt()
-        Configuration.linux.os_kill_pid(self.process.pid)
+        Configuration.linux.kill_pid(self.process.pid)
 
         if self.delete_existing_files:
             self.delete_airodump_temp_files(self.output_file_prefix)
@@ -124,7 +124,7 @@ class Airodump(Dependency):
         """ Finds all files in the temp directory that start with the output_file_prefix """
         result = []
         temp = Configuration.temp()
-        for fil in Configuration.linux.os_listdir(temp):
+        for fil in Configuration.linux.listdir(temp):
             if not fil.startswith(output_file_prefix):
                 continue
 
@@ -141,7 +141,7 @@ class Airodump(Dependency):
         """
         # Remove all temp files
         for fil in cls.find_files_by_output_prefix(output_file_prefix):
-            Configuration.linux.remove_file(fil)
+            Configuration.linux.remove(fil)
 
         # Remove .cap and .xor files from pwd
         for fil in os.listdir('.'):
@@ -150,9 +150,9 @@ class Airodump(Dependency):
 
         # Remove replay/cap/xor files from temp
         temp_dir = Configuration.temp()
-        for fil in Configuration.linux.os_listdir(temp_dir):
+        for fil in Configuration.linux.listdir(temp_dir):
             if fil.startswith('replay_') and fil.endswith('.cap') or fil.endswith('.xor'):
-                Configuration.linux.remove_file(Configuration.linux.os_path_join(temp_dir, fil))
+                Configuration.linux.remove(Configuration.linux.join(temp_dir, fil))
 
     def get_targets(self, old_targets=None, apply_filter=True, target_archives=None):
         """ Parses airodump's CSV file, returns list of Targets """

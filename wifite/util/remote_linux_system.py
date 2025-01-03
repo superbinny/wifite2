@@ -20,12 +20,14 @@
 #       LastModify:  2014-11-17
 # *********************************************************
 
-import errno  # Error numbers
+# import errno  # Error numbers
 import hashlib
 import os
 import random  # Generating a random MAC address.
 import time
-
+import random
+import string
+ 
 # pip install pickle
 import pickle
 
@@ -83,6 +85,11 @@ class remote_linux_system():
         self.globals = {}
         self.IsSave = isSave
     
+    @staticmethod
+    def generate_random_string(length):
+        letters = string.ascii_letters + string.digits + string.punctuation
+        return ''.join(random.choice(letters) for _ in range(length))
+
     def get_connect(self):
         self.connect_str = f"tcp://{self.server_ip}:{self.server_port}"
         if not self.Emul:
@@ -107,7 +114,6 @@ class remote_linux_system():
                 hash_md5.update(chunk)
         return hash_md5.hexdigest()
     
-    @staticmethod
     def get_remote_file_md5(self, file_path):
         # 获取远程文件的 md5
         return self.client.get_file_md5(file_path, async_=True)
@@ -127,16 +133,16 @@ class remote_linux_system():
             result = self.serial.load(_hash)
         else:
             # print('exec_cmd_ret:\t%s' % cmd)
-            result = self.client.exec_cmd_ret(cmd, async_=True)
+            result_id, result = self.client.exec_cmd_ret(cmd, async_=True)
 
         t_beginning = time.time()
         seconds_passed = 0
         while not self.Emul:
-            if self.poll('result') is not None:
+            if self.poll(result_id) is not None:
                 break
             seconds_passed = time.time() - t_beginning
             if timeout and seconds_passed > timeout:
-                self.os_kill('result')
+                self.kill(result_id)
                 raise TimeoutError(cmd, timeout)
             time.sleep(0.1)
         if self.IsSave and not self.Emul:
@@ -146,18 +152,21 @@ class remote_linux_system():
     def exec_cmd_ret(self, cmd, _hash=None):
         if _hash is None:
             _hash = cmd
+
         result = None
         if self.Emul:
             result = self.serial.load(_hash)
         else:
-            # print 'exec_cmd_ret:\t', cmd
             try:
-                result = self.client.exec_cmd_ret(cmd, async_=True)
+                result_id, result = self.client.exec_cmd_ret(cmd, async_=True)
             except zerorpc.RemoteError:
+                print('\nexec_cmd_ret: cmd=%s' % cmd)
                 print('Error: exec_cmd_ret zerorpc.RemoteError')
             except zerorpc.TimeoutExpired:
+                print('\nexec_cmd_ret: cmd=%s' % cmd)
                 print('Error: exec_cmd_ret zerorpc.TimeoutExpired')
             except Exception as ex:
+                print('\nexec_cmd_ret: cmd=%s' % cmd)
                 print('Error: exec_cmd_ret %s' % ex.args[0])
 
         if self.IsSave and not self.Emul:
@@ -203,18 +212,24 @@ DN = open(os.devnull, 'w')
         self.Do('import shutil')  # copy
         self.Do('from signal import SIGINT, SIGTERM')
         self.Do("DN=open(os.devnull, 'w')")
-        self.isLinux = self.exec_cmd_ret('platform.system()') == 'Linux'
-        self.os_sep = self.exec_cmd_ret('os.sep')
-        self.os_name = self.exec_cmd_ret('os.name')
+        self.isLinux = self.platform() == 'Linux'
+        self.sep = self.sep()
+        self.name = self.name()
 
     # 有关于os的几个操作
-    def os_getuid(self):
+    def platform(self):
+        return self.exec_cmd_ret('platform.system()')
+    
+    def getuid(self):
         return self.exec_cmd_ret('os.getuid()')
-
-    def os_uname(self):
+    
+    def sep(self):
+        return self.exec_cmd_ret('os.sep')
+    
+    def uname(self):
         return self.exec_cmd_ret('os.uname()')
 
-    def os_listdir(self, p):
+    def listdir(self, p):
         return self.exec_cmd_ret("os.listdir('%s')" % p)
 
     def exists(self, p):
@@ -233,7 +248,7 @@ DN = open(os.devnull, 'w')
         # print(cmd, '=', reslt)
         return reslt
 
-    def os_kill(self, process, sign='signal.SIGTERM'):
+    def kill(self, process, sign='signal.SIGTERM'):
         if self.isLinux:
             # pgid = self.exec_cmd_ret("os.getpgid(%s.pid)" % process)
             self.Do("os.kill(%s.pid, %s)" % (process, sign))
@@ -241,12 +256,12 @@ DN = open(os.devnull, 'w')
         else:
             self.Do("%s.terminate()" % process)
 
-    def os_kill_pid(self, pid):
+    def kill_pid(self, pid):
         # pgid = self.exec_cmd_ret("os.getpgid(%s.pid)" % process)
         self.Do("os.kill(%d, %s)" % (pid, 'SIGTERM'))
         self.Do("os.waitpid(%d, 0)" % pid)
 
-    def remove_file(self, filename):
+    def remove(self, filename):
         """
             Attempts to remove a file. Does not throw error if file is not found.
         """
@@ -283,11 +298,14 @@ DN = open(os.devnull, 'w')
                 if self.isdir(fullname):
                     self.remove_dirs(fullname)
                 else:
-                    self.remove_file(fullname)
+                    self.remove(fullname)
 
     # os功能
     def getcwd(self):
         return self.exec_cmd_ret("os.getcwd()")
+    
+    def abspath(self, f):
+        return self.exec_cmd_ret(f"os.path.abspath('{f}')")
     
     def isfile(self, f):
         return self.exec_cmd_ret(f"os.path.isfile('{f}')")
@@ -323,6 +341,9 @@ DN = open(os.devnull, 'w')
 
     def unlink(self, filename):
         self.Do("os.unlink('%s')" % filename)
+
+    def name(self, filename):
+        self.exec_cmd_ret("os.name")
 
     def basename(self, fname):
         return self.exec_cmd_ret("os.path.basename('%s')" % fname)
@@ -490,14 +511,14 @@ DN = open(os.devnull, 'w')
     def kill_all_subprocess(self):
         pids = self.get_server_sub_pids()
         for p in pids.keys():
-            self.os_kill_pid(p)
+            self.kill_pid(p)
 
     def send_interrupt(self, process):
         """
             Sends interrupt signal to process's PID.
         """
         try:
-            self.os_kill(process, 'SIGINT')
+            self.kill(process, 'SIGINT')
         except OSError:
             pass  # process cannot be killed
         except TypeError:
@@ -796,7 +817,7 @@ if __name__ == '__main__':
     
     linux = remote_linux_system(server_ip=server_ip, server_port=server_port)
     linux.connect()
-    print(linux.exec_cmd_ret('os.name') + linux.get_server_pid())
+    print(linux.name() + linux.get_server_pid())
 
     fsrc = '/etc/passwd'
     fdst = 'd:\\passwd'
@@ -826,8 +847,8 @@ if __name__ == '__main__':
 
     if len(monitors):
         linux_temp = linux.mkdtemp(prefix='wifite')
-        if not linux_temp.endswith(linux.os_sep):
-            linux_temp += linux.os_sep
+        if not linux_temp.endswith(linux.sep):
+            linux_temp += linux.sep
 
         command = ['airodump-ng',
                    '-a',  # only show associated clients

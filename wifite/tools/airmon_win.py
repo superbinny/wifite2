@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
+# import os
 import re
 import signal
 import time
@@ -134,10 +134,11 @@ class Airmon(Dependency):
         Ip.up(interface)
 
         # /sys/class/net/wlan0/type
-        iface_type_path = os.path.join('/sys/class/net', interface, 'type')
-        if os.path.exists(iface_type_path):
-            with open(iface_type_path, 'r'):
-                pass
+        iface_type_path = Configuration.linux.join('/sys/class/net', interface, 'type')
+        if Configuration.linux.exists(iface_type_path):
+            # with open(iface_type_path, 'r'):
+            #    pass
+            Configuration.linux.open(iface_type_path, 'r')
 
         return interface
 
@@ -152,10 +153,11 @@ class Airmon(Dependency):
         Ip.up(interface)
 
         # /sys/class/net/wlan0/type
-        iface_type_path = os.path.join('/sys/class/net', interface, 'type')
-        if os.path.exists(iface_type_path):
-            with open(iface_type_path, 'r'):
-                pass
+        iface_type_path = Configuration.linux.join('/sys/class/net', interface, 'type')
+        if Configuration.linux.exists(iface_type_path):
+            # with open(iface_type_path, 'r'):
+            #     pass
+            Configuration.linux.open(iface_type_path, 'r')
 
         return interface
 
@@ -371,7 +373,7 @@ class Airmon(Dependency):
             elif pname == 'avahi-daemon' and Process.exists('service'):
                 Process(['service', 'avahi-daemon', 'stop']).stdout()
             else:
-                os.kill(int(pid), signal.SIGKILL)
+                Configuration.linux.kill(int(pid), 'signal.SIGKILL')
 
     @staticmethod
     def put_interface_up(interface):

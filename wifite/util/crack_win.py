@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
+# import os
 from json import loads
 from ..config_win import Configuration
 from ..model.handshake_win import Handshake
@@ -43,7 +43,7 @@ class CrackHelper:
             Configuration.wordlist = input()
             Color.p('{W}')
 
-            if not os.path.exists(Configuration.wordlist):
+            if not Configuration.linux.exists(Configuration.wordlist):
                 Color.pl('{!} {R}Wordlist {O}%s{R} not found. Exiting.' % Configuration.wordlist)
                 return
             Color.pl('')
@@ -96,7 +96,7 @@ class CrackHelper:
 
     @classmethod
     def is_cracked(cls, file):
-        if not os.path.exists(Configuration.cracked_file):
+        if not Configuration.linux.exists(Configuration.cracked_file):
             return False
         with open(Configuration.cracked_file) as f:
             json = loads(f.read())
@@ -105,7 +105,7 @@ class CrackHelper:
         for result in json:
             for k in list(result.keys()):
                 v = result[k]
-                if 'file' in k and os.path.basename(v) == file:
+                if 'file' in k and Configuration.linux.basename(v) == file:
                     return True
         return False
 
@@ -116,12 +116,12 @@ class CrackHelper:
         skipped_pmkid_files = skipped_cracked_files = 0
 
         hs_dir = Configuration.wpa_handshake_dir
-        if not os.path.exists(hs_dir) or not os.path.isdir(hs_dir):
+        if not Configuration.linux.exists(hs_dir) or not Configuration.linux.isdir(hs_dir):
             Color.pl('\n{!} {O}directory not found: {R}%s{W}' % hs_dir)
             return []
 
-        Color.pl('\n{+} Listing captured handshakes from {C}%s{W}:\n' % os.path.abspath(hs_dir))
-        for hs_file in os.listdir(hs_dir):
+        Color.pl('\n{+} Listing captured handshakes from {C}%s{W}:\n' % Configuration.linux.abspath(hs_dir))
+        for hs_file in Configuration.linux.listdir(hs_dir):
             if hs_file.count('_') != 3:
                 continue
 
@@ -149,13 +149,13 @@ class CrackHelper:
 
             if hs_type == '4-WAY':
                 # Patch for essid with " " (zero) or dot "." in name
-                handshakenew = Handshake(os.path.join(hs_dir, hs_file))
+                handshakenew = Handshake(Configuration.linux.join(hs_dir, hs_file))
                 handshakenew.divine_bssid_and_essid()
                 essid_discovery = handshakenew.essid
 
                 essid = essid if essid_discovery is None else essid_discovery
             handshake = {
-                'filename': os.path.join(hs_dir, hs_file),
+                'filename': Configuration.linux.join(hs_dir, hs_file),
                 'bssid': bssid.replace('-', ':'),
                 'essid': essid,
                 'date': date,

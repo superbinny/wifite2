@@ -4,9 +4,10 @@
 from ..util.process_win import Process
 from ..util.color_win import Color
 from ..tools.tshark_win import Tshark
+from ..config_win import Configuration
 
 import re
-import os
+# import os
 
 
 class Handshake(object):
@@ -152,9 +153,9 @@ class Handshake(object):
         proc = Process(cmd)
         proc.wait()
         if replace_existing_file:
-            from shutil import copy
-            copy(outfile, self.capfile)
-            os.remove(outfile)
+            # from shutil import copy
+            Configuration.linux.copy(outfile, self.capfile)
+            Configuration.linux.remove(outfile)
 
     @staticmethod
     def print_pairs(pairs, tool=None):
@@ -180,19 +181,19 @@ class Handshake(object):
         """ Analyzes .cap file(s) for handshake """
         from ..config_win import Configuration
         if Configuration.check_handshake == '<all>':
-            Color.pl('{+} checking all handshakes in {G}"./hs"{W} directory\n')
+            Color.pl('{+} checking all handshakes in {G}"%s"{W} directory\n' % Configuration.wpa_handshake_dir)
             try:
-                capfiles = [os.path.join('hs', x) for x in os.listdir('hs') if x.endswith('.cap')]
+                capfiles = [Configuration.linux.join(Configuration.wpa_handshake_dir, x) for x in Configuration.linux.listdir(Configuration.wpa_handshake_dir) if x.endswith('.cap')]
             except OSError:
                 capfiles = []
             if not capfiles:
-                Color.pl('{!} {R}no .cap files found in {O}"./hs"{W}\n')
+                Color.pl('{!} {R}no .cap files found in {O}"%s"{W}\n' % Configuration.wpa_handshake_dir)
         else:
             capfiles = [Configuration.check_handshake]
 
         for capfile in capfiles:
             Color.pl('{+} checking for handshake in .cap file {C}%s{W}' % capfile)
-            if not os.path.exists(capfile):
+            if not Configuration.linux.exists(capfile):
                 Color.pl('{!} {O}.cap file {C}%s{O} not found{W}' % capfile)
                 return
             hs = Handshake(capfile, bssid=Configuration.target_bssid, essid=Configuration.target_essid)

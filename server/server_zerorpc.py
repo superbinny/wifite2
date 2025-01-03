@@ -24,6 +24,10 @@
 import zerorpc
 import hashlib
 import os
+
+import random
+import string
+
 # pip install netifaces
 import netifaces as ni
 
@@ -47,11 +51,17 @@ class MyServer():
         self.locals = {}
         self.globals = {}
 
+    @staticmethod
+    def generate_random_string(length):
+        letters = string.ascii_letters + string.digits + string.punctuation
+        return ''.join(random.choice(letters) for _ in range(length))
+    
     def exec_cmd_ret(self, request):
-        cmd = 'result=' + request
+        result_id = 'result' + MyServer.generate_random_string(6)
+        cmd = f'{result_id}=' + request
         exec(cmd, self.globals, self.locals)
         #print(self.locals)
-        return self.locals['result']
+        return result_id, self.locals[result_id]
     
     def get_result(self, result):
         if result in self.locals:

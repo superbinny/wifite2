@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
+# import os
 import re
 
 from .dependency_win import Dependency
@@ -16,11 +16,11 @@ class Aircrack(Dependency):
 
     def __init__(self, ivs_file2=None):
 
-        self.cracked_file = os.path.abspath(os.path.join(Configuration.temp(), 'wepkey.txt'))
+        self.cracked_file = Configuration.linux.abspath(Configuration.linux.join(Configuration.temp(), 'wepkey.txt'))
 
         # Delete previous cracked files
-        if os.path.exists(self.cracked_file):
-            os.remove(self.cracked_file)
+        if Configuration.linux.exists(self.cracked_file):
+            Configuration.linux.remove(self.cracked_file)
 
         command = [
             'aircrack-ng',
@@ -38,7 +38,7 @@ class Aircrack(Dependency):
         return self.pid.poll() is None
 
     def is_cracked(self):
-        return os.path.exists(self.cracked_file)
+        return Configuration.linux.exists(self.cracked_file)
 
     def stop(self):
         """ Stops aircrack process """
@@ -72,8 +72,8 @@ class Aircrack(Dependency):
         return hex_key, ascii_key
 
     def __del__(self):
-        if os.path.exists(self.cracked_file):
-            os.remove(self.cracked_file)
+        if Configuration.linux.exists(self.cracked_file):
+            Configuration.linux.remove(self.cracked_file)
 
     @staticmethod
     def crack_handshake(handshake, show_command=False):
@@ -126,11 +126,11 @@ class Aircrack(Dependency):
 
         Color.pl('')
 
-        if not os.path.exists(key_file):
+        if not Configuration.linux.exists(key_file):
             return None
         with open(key_file, 'r') as fid:
             key = fid.read().strip()
-        os.remove(key_file)
+        Configuration.linux.remove(key_file)
 
         return key
 

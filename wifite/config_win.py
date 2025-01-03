@@ -5,7 +5,13 @@ import os,sys
 import re
 from .util.color_win import Color
 from .tools.macchanger_win import Macchanger
-from .util.remote_linux_system import remote_linux_system, FileType
+from .util.remote_linux_system import remote_linux_system
+import random
+import string
+ 
+def generate_random_string(length):
+    letters = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(random.choice(letters) for _ in range(length))
 
 def init_linux(server_ip, server_port, isEmul=False, isSave=False):
     linux = remote_linux_system(server_ip=server_ip, server_port=server_port, isEmul=isEmul, isSave=isSave)
@@ -47,6 +53,7 @@ class Configuration(object):
     # Add by binny
     ignore_negative_one = None
     remote_server_port = None
+
     ignore_essids = None
     ignore_old_handshakes = None
     infinite_mode = None
@@ -101,6 +108,32 @@ class Configuration(object):
     wps_timeout_threshold = None
 
     @classmethod
+    def copy_local_to_remote(cls, src, check=False):
+        local_file = src.replace('/', '\\')
+        if os.path.exists(local_file):
+            # print(f'存在密码文件 {src}，位于本地，拷贝到远程文件夹')
+            # 将本地文件拷贝到远程的当前用户目录下：
+            home_dir = cls.linux.get_user_home()
+            if src.startswith('./'):
+                src = src[2:]
+            remote_file = cls.linux.join(f'{home_dir}/wifite2/data', src)
+            if cls.linux.exists(remote_file):
+                # 如果两边文件的 md5 不相同，则不是同一个文件
+                if check:
+                    remote_md5 = cls.linux.get_remote_file_md5(remote_file)
+                    local_md5 = cls.linux.get_local_file_md5(local_file)
+                    if remote_md5==local_md5:
+                        return remote_file
+            else:
+                par_dir = cls.linux.dirname(remote_file)
+                if not cls.linux.exists(par_dir):
+                    cls.linux.makedirs(par_dir)
+                result = cls.linux.copy_to_remote(local_file, remote_file, check=True)
+                if result and cls.linux.exists(remote_file):
+                    return remote_file
+        return None
+    
+    @classmethod
     def initialize(cls, linux=None, load_interface=True):
         """
             Sets up default initial configuration values.
@@ -134,6 +167,7 @@ class Configuration(object):
         cls.target_bssid = None  # User-defined AP BSSID
         cls.ignore_essids = None  # ESSIDs to ignore
         cls.ignore_cracked = False  # Ignore previously-cracked BSSIDs
+
         # Add by binny
         cls.ignore_negative_one = False  # Ignore negative One channel
         cls.remote_server_port = ""  # Remote server and port
@@ -237,37 +271,31 @@ class Configuration(object):
                     # print(f'存在密码文件 {wlist}，位于远程')
                     break
             else:
-                local_file = wlist.replace('/', '\\')
-                if os.path.exists(local_file):
-                    # print(f'存在密码文件 {wlist}，位于本地，拷贝到远程文件夹')
-                    # 将本地文件拷贝到远程的当前用户目录下：
-                    home_dir = cls.linux.get_user_home()
-                    remote_file = cls.linux.join(f'{home_dir}/data', wlist)
-                    if cls.linux.exists(remote_file):
-                        # 如果两边文件的 md5 不相同，则不是同一个文件
-                        remote_md5 = cls.linux.get_remote_file_md5(remote_file)
-                        local_md5 = cls.linux.get_local_file_md5(local_file)
-                        if remote_md5==local_md5:
-                            cls.wordlist = remote_file
-                            break
-                    else:
-                        par_dir = cls.linux.dirname(remote_file)
-                        if not cls.linux.exists(par_dir):
-                            cls.linux.makedirs(par_dir)
-                        result = cls.linux.copy_to_remote(local_file, remote_file, check=True)
-                        if result and cls.linux.exists(remote_file):
-                            cls.wordlist = remote_file
-                            break
+                remote_file = cls.copy_local_to_remote(wlist, check=True)
+                if remote_file is None:
+                    continue
+                cls.wordlist = remote_file
+                break
         
-        manufacturers = FileType()
+        if not cls.wpa_handshake_dir.startswith('/'):
+            # 设置为远程：
+            home_dir = cls.linux.get_user_home()
+            src = cls.wpa_handshake_dir
+            if src.startswith('./'):
+                src = src[2:]
+            remote_dir = cls.linux.join(f'{home_dir}/wifite2', src)
+            # 后续 PMKID 会自动创建这个目录
+            # if not cls.linux.exists(remote_dir):
+            #     cls.linux.makedirs(remote_dir)
+            cls.wpa_handshake_dir = remote_dir
+
+        manufacturers = None        
+        if cls.linux.exists('/usr/share/ieee-data/oui.txt'):
+            manufacturers = '/usr/share/ieee-data/oui.txt'
+        elif os.path.exists('ieee-oui.txt'):
+            # 拷贝到远程
+            manufacturers = cls.copy_local_to_remote('ieee-oui.txt', check=True)
         
-        if cls.linux.isfile('/usr/share/ieee-data/oui.txt'):
-            manufacturers.filename = '/usr/share/ieee-data/oui.txt'
-            manufacturers.is_remote = True
-        else:
-            manufacturers.filename = 'ieee-oui.txt'
-            manufacturers.is_remote = False
-            
         if cls.linux.exists(manufacturers):
             # print(f'存在文件 {manufacturers.filename}')
             cls.manufacturers = {}
@@ -696,8 +724,8 @@ class Configuration(object):
         """ Creates and returns a temporary directory """
         # from tempfile import mkdtemp
         tmp = cls.linux.mkdtemp(prefix='wifite')
-        if not tmp.endswith(cls.linux.os_sep):
-            tmp += cls.linux.os_sep
+        if not tmp.endswith(cls.linux.sep):
+            tmp += cls.linux.sep
         return tmp
 
     @classmethod
@@ -706,9 +734,9 @@ class Configuration(object):
         if cls.temp_dir is None:
             return
         if cls.linux.exists(cls.temp_dir):
-            for f in cls.linux.os_listdir(cls.temp_dir):
-                cls.linux.remove_file(cls.temp_dir + f)
-            cls.linux.os_rmdir(cls.temp_dir)
+            for f in cls.linux.listdir(cls.temp_dir):
+                cls.linux.remote(cls.temp_dir + f)
+            cls.linux.rmdir(cls.temp_dir)
 
     @classmethod
     def exit_gracefully(cls):

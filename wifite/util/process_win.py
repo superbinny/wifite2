@@ -4,11 +4,11 @@
 import contextlib
 import time
 import signal
-import os
+# import os
 # from subprocess import Popen, PIPE
 from subprocess import PIPE
 from ..util.color_win import Color
-from ..config_win import Configuration, LinuxPopen
+from ..config_win import Configuration, LinuxPopen, generate_random_string
 
 
 class Process(object):
@@ -91,7 +91,7 @@ class Process(object):
     def get_result_id(command):
         return command[0].replace('-', '_')
         
-    def __init__(self, command, devnull=False, stdout='PIPE', stderr='PIPE', cwd='None', bufsize='0', stdin='PIPE'):
+    def __init__(self, command, devnull=False, stdout='PIPE', stderr='PIPE', cwd='None', bufsize='0', stdin='PIPE', result_id=None):
         """ Starts executing command """
 
         if type(command) is str:
@@ -114,8 +114,13 @@ class Process(object):
 
         self.start_time = time.time()
         # self.pid = Popen(command, stdout=sout, stderr=serr, stdin=stdin, cwd=cwd, bufsize=bufsize)
-        self.result_id = Process.get_result_id(command)
+        if result_id is None:
+            self.result_id = Process.get_result_id(command) + generate_random_string(6)
+        else:
+            self.result_id = result_id
+
         self.popen = LinuxPopen(Configuration.linux, command, stdout=sout, stderr=serr, stdin=stdin, cwd=cwd, bufsize=bufsize, result_id=self.result_id)
+        self.result_id = self.popen.result_id
         self.pid = self.popen.pid
 
     def __del__(self):
@@ -171,11 +176,11 @@ class Process(object):
     def poll(self):
         """ Returns exit code if process is dead, otherwise 'None' """
         # return self.pid.poll()
-        return Configuration.linux.poll(self.popen.result_id)
+        return Configuration.linux.poll(self.result_id)
 
     def wait(self):
         # self.pid.wait()
-        Configuration.linux.wait(self.popen.result_id)
+        Configuration.linux.wait(self.result_id)
         
 
     def running_time(self):
@@ -204,7 +209,7 @@ class Process(object):
         if Configuration.verbose > 1:
             Color.pe('\n {C}[?] {W} sending interrupt to PID %d (%s)' % (pid, cmd))
 
-        os.kill(pid, signal.SIGINT)
+        Configuration.linux.kill(pid, signal.SIGINT)
 
         start_time = time.time()  # Time since Interrupt was sent
         while self.pid.poll() is None:
@@ -215,7 +220,7 @@ class Process(object):
                     # We waited too long for process to die, terminate it.
                     if Configuration.verbose > 1:
                         Color.pe('\n {C}[?] {W} Waited > %0.2f seconds for process to die, killing it' % wait_time)
-                    os.kill(pid, signal.SIGTERM)
+                    Configuration.linux.kill(pid, 'signal.SIGTERM')
                     self.pid.terminate()
                     break
             except KeyboardInterrupt:
@@ -231,7 +236,7 @@ if __name__ == '__main__':
     Configuration.initialize(linux=linux, load_interface=False)
     command = ['ls']
     # p = Process(command)
-    result_id = Process.get_result_id(command)
+    result_id = Process.get_result_id(command) + generate_random_string(6)
     p = LinuxPopen(Configuration.linux, command, result_id=result_id)
     print((p.stdout()))
     print((p.stderr()))

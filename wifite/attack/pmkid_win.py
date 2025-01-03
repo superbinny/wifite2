@@ -9,10 +9,10 @@ from ..util.timer import Timer
 from ..model.pmkid_result_win import CrackResultPMKID
 from ..tools.airodump_win import Airodump
 from threading import Thread
-import os
+# import os
 import time
 import re
-from shutil import copy
+# from shutil import copy
 
 
 class AttackPMKID(Attack):
@@ -33,15 +33,15 @@ class AttackPMKID(Attack):
             The hashcat hash (hash*bssid*station*essid) if found.
             None if not found.
         """
-        if not os.path.exists(Configuration.wpa_handshake_dir):
+        if not Configuration.linux.exists(Configuration.wpa_handshake_dir):
             return None
 
         bssid = bssid.lower().replace(':', '')
 
         file_re = re.compile(r'.*pmkid_.*\.22000')
-        for filename in os.listdir(Configuration.wpa_handshake_dir):
-            pmkid_filename = os.path.join(Configuration.wpa_handshake_dir, filename)
-            if not os.path.isfile(pmkid_filename):
+        for filename in Configuration.linux.listdir(Configuration.wpa_handshake_dir):
+            pmkid_filename = Configuration.linux.join(Configuration.wpa_handshake_dir, filename)
+            if not Configuration.linux.isfile(pmkid_filename):
                 continue
             if not re.match(file_re, pmkid_filename):
                 continue
@@ -169,7 +169,7 @@ class AttackPMKID(Attack):
 
                 # Copy .cap file to temp for consistency
                 temp_file = Configuration.temp('handshake.cap.bak')
-                copy(cap_file, temp_file)
+                Configuration.linux.copy(cap_file, temp_file)
 
                 # Check cap file in temp for Handshake
                 # bssid = airodump_target.bssid
@@ -187,7 +187,7 @@ class AttackPMKID(Attack):
                 # There is no handshake
                 capture = None
                 # Delete copied .cap file in temp to save space
-                os.remove(temp_file)
+                Configuration.linux.remove(temp_file)
 
                 # # Look for new clients
                 # airodump_target = self.wait_for_target(airodump)
@@ -324,8 +324,8 @@ class AttackPMKID(Attack):
         # Create handshake dir
         if self.do_airCRACK:
             return self._extracted_from_save_pmkid_6(pmkid_hash)
-        if not os.path.exists(Configuration.wpa_handshake_dir):
-            os.makedirs(Configuration.wpa_handshake_dir)
+        if not Configuration.linux.exists(Configuration.wpa_handshake_dir):
+            Configuration.linux.makedirs(Configuration.wpa_handshake_dir)
 
         pmkid_file = self._extracted_from_save_pmkid_21('.22000')
         with open(pmkid_file, 'w') as pmkid_handle:
@@ -341,7 +341,7 @@ class AttackPMKID(Attack):
         bssid_safe = self.target.bssid.replace(':', '-')
         date = time.strftime('%Y-%m-%dT%H-%M-%S')
         result = f'pmkid_{essid_safe}_{bssid_safe}_{date}{arg0}'
-        result = os.path.join(Configuration.wpa_handshake_dir, result)
+        result = Configuration.linux.join(Configuration.wpa_handshake_dir, result)
 
         Color.p('\n{+} Saving copy of {C}PMKID Hash{W} to {C}%s{W} ' % result)
         return result
@@ -349,5 +349,5 @@ class AttackPMKID(Attack):
     # TODO Rename this here and in `save_pmkid`
     def _extracted_from_save_pmkid_6(self, pmkid_hash):
         pmkid_file = self._extracted_from_save_pmkid_21('.cap')
-        copy(pmkid_hash, pmkid_file)
+        Configuration.linux.copy(pmkid_hash, pmkid_file)
         return pmkid_file
