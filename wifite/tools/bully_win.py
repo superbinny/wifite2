@@ -100,7 +100,7 @@ class Bully(Attack, Dependency):
                 self.target = self.wait_for_target(airodump)
             except Exception as e:
                 self.pattack('{R}Failed: {O}%s{W}' % e, newline=True)
-                Color.pexception(e)
+                Color.pexception(e, call_from='Bully')
                 self.stop()
                 break
 

@@ -32,7 +32,9 @@ import string
 import pickle
 
 # pip install zerorpc
-import zerorpc
+import gevent.exceptions
+import zerorpc, gevent
+from ..util.color_win import Color
 
 class FileType():
     is_remote = False
@@ -99,10 +101,8 @@ class remote_linux_system():
                 # print(f'Connect to {self.connect_str} ...')
                 client = zerorpc.Client()
                 client.connect(self.connect_str)
-            except Exception as e:
-                print('Error: get_connect %s' % e)
-        # reset_namespace = client.doCommand('reset_namespace')
-        # print(reset_namespace)
+            except Exception as ex:
+                Color.pexception(ex, call_from='get_connect')
         return client
     
     @staticmethod
@@ -116,7 +116,12 @@ class remote_linux_system():
     
     def get_remote_file_md5(self, file_path):
         # 获取远程文件的 md5
-        return self.client.get_file_md5(file_path, async_=True)
+        ret = ''
+        try:
+            ret = self.client.get_file_md5(file_path, async_=True)
+        except Exception as ex:
+            Color.pexception(ex, call_from='get_remote_file_md5')
+        return ret
     
     def reset(self):
         self.ResetNamespace()
@@ -133,7 +138,10 @@ class remote_linux_system():
             result = self.serial.load(_hash)
         else:
             # print('exec_cmd_ret:\t%s' % cmd)
-            result_id, result = self.client.exec_cmd_ret(cmd, async_=True)
+            try:
+                result_id, result = self.client.exec_cmd_ret(cmd, async_=True)
+            except Exception as ex:
+                Color.pexception(ex, call_from='exec_timeout')
 
         t_beginning = time.time()
         seconds_passed = 0
@@ -165,9 +173,14 @@ class remote_linux_system():
             except zerorpc.TimeoutExpired:
                 print('\nexec_cmd_ret: cmd=%s' % cmd)
                 print('Error: exec_cmd_ret zerorpc.TimeoutExpired')
-            except Exception as ex:
+            except gevent.exceptions.LoopExit:
                 print('\nexec_cmd_ret: cmd=%s' % cmd)
-                print('Error: exec_cmd_ret %s' % ex.args[0])
+                print('Error: exec_cmd_ret gevent.exceptions.LoopExit')
+            except zerorpc.exceptions.LostRemote:
+                print('\nexec_cmd_ret: cmd=%s' % cmd)
+                print('Error: exec_cmd_ret zerorpc.exceptions.LostRemote')
+            except Exception as ex:
+                Color.pexception(ex, call_from='exec_cmd_ret')
 
         if self.IsSave and not self.Emul:
             self.serial.save(_hash, result)
@@ -176,7 +189,11 @@ class remote_linux_system():
         return result
     
     def get_result(self, result):
-        return self.client.result(result, async_=True)
+        try:
+            ret = self.client.result(result, async_=True)
+        except Exception as ex:
+            Color.pexception(ex, call_from='get_result')
+        return ret
     
     def Do(self, f, _hash=None):
         if _hash is None:
@@ -188,8 +205,8 @@ class remote_linux_system():
             # print 'exec_cmd:\t', f
             try:
                 result = self.client.exec_cmd(f, async_=True)
-            except Exception as e:
-                print('Error: Do %s' % e)
+            except Exception as ex:
+                Color.pexception(ex, call_from='Do')
 
         if self.IsSave and not self.Emul:
             self.serial.save(_hash, result)
@@ -201,15 +218,19 @@ class remote_linux_system():
         '''
 from subprocess import Popen, call, PIPE
 import os, platform
-import shutil
+import shutil, json
 from signal import SIGINT, SIGTERM
 DN = open(os.devnull, 'w')
         '''
         if not self.Emul:
-            self.client.doCommand('reset_namespace', async_=True)
+            try:
+                self.client.doCommand('reset_namespace', async_=True)
+            except Exception as ex:
+                Color.pexception(ex, call_from='doCommand')
+
         self.Do('from subprocess import Popen, call, PIPE')
         self.Do('import os, platform')
-        self.Do('import shutil')  # copy
+        self.Do('import shutil, json')  # copy
         self.Do('from signal import SIGINT, SIGTERM')
         self.Do("DN=open(os.devnull, 'w')")
         self.isLinux = self.platform() == 'Linux'
@@ -233,6 +254,8 @@ DN = open(os.devnull, 'w')
         return self.exec_cmd_ret("os.listdir('%s')" % p)
 
     def exists(self, p):
+        if p is None or len(p.strip()) == 0:
+            return False
         if type(p) is FileType:
             if p.is_remote:
                 filename = p.filename
@@ -251,14 +274,13 @@ DN = open(os.devnull, 'w')
     def kill(self, process, sign='signal.SIGTERM'):
         if self.isLinux:
             # pgid = self.exec_cmd_ret("os.getpgid(%s.pid)" % process)
-            self.Do("os.kill(%s.pid, %s)" % (process, sign))
-            self.Do("os.waitpid(%s.pid, 0)" % process)
+            self.kill_pid(process, sign)
         else:
             self.Do("%s.terminate()" % process)
 
-    def kill_pid(self, pid):
+    def kill_pid(self, pid, sign='signal.SIGTERM'):
         # pgid = self.exec_cmd_ret("os.getpgid(%s.pid)" % process)
-        self.Do("os.kill(%d, %s)" % (pid, 'SIGTERM'))
+        self.Do("os.kill(%d, %s)" % (pid, sign))
         self.Do("os.waitpid(%d, 0)" % pid)
 
     def remove(self, filename):
@@ -359,7 +381,7 @@ DN = open(os.devnull, 'w')
         '''
         将远程文件拷贝到本地
         '''
-        if not overwrite and self.exist(dst):
+        if not overwrite and self.exists(dst):
             return True
         
         try:
@@ -368,7 +390,7 @@ DN = open(os.devnull, 'w')
                 par_path = os.path.dirname(dst)
                 if not os.path.exists(par_path):
                     os.makedirs(par_path)
-                if self.exist(dst):
+                if self.exists(dst):
                     os.remove(dst)
                 f = open(dst, 'wb')
                 f.write(data)
@@ -386,7 +408,7 @@ DN = open(os.devnull, 'w')
         '''
         将本地文件拷贝到远程
         '''
-        if not overwrite and self.exist(dst):
+        if not overwrite and self.exists(dst):
             return True
         
         try:
@@ -401,12 +423,15 @@ DN = open(os.devnull, 'w')
                 local_md5 = remote_linux_system.get_local_file_md5(dst)
                 return remote_md5==local_md5
             return self.exists(dst)
-        except Exception as e:
-            print('Error: copy_to_remote %s' % e)
+        except Exception as ex:
+            Color.pexception(ex, call_from='copy_to_remote')
         return None
 
     def rename(self, old, new):
-        result = self.client.rename(old, new, async_=True)
+        try:
+            result = self.client.rename(old, new, async_=True)
+        except Exception as ex:
+            Color.pexception(ex, call_from='rename')
         return result
 
     # 以下几个函数是关于文件读写和关闭的

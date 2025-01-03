@@ -6,7 +6,7 @@ from ..config_win import Configuration
 
 # import os
 import time
-from json import loads, dumps
+# from json import loads, dumps
 
 
 class CrackResult(object):

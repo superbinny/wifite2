@@ -244,7 +244,7 @@ class AttackWEP(Attack):
                     return self.success
 
             except Exception as e:
-                Color.pexception(e)
+                Color.pexception(e, call_from='AttackWEP')
                 continue
                 # End of big try-catch
         # End of for-each-attack-type loop

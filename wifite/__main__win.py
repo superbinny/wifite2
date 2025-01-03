@@ -104,7 +104,7 @@ def entry_point():
         wifite = Wifite()
         wifite.start()
     except Exception as e2:
-        Color.pexception(e2)
+        Color.pexception(e2, call_from='entry_point')
         Color.pl('\n{!} {R}Exiting{W}\n')
 
     except KeyboardInterrupt:
