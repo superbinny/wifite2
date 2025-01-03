@@ -69,7 +69,7 @@ class MyServer():
         cmd = f'{result_id}=' + request
         try:
             exec(cmd, self.globals, self.locals)
-        except NameError:
+        except NameError as ex:
             if "Popen" in cmd:
                 cmd = cmd
             desc = self.print_error(request, ex)

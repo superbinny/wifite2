@@ -152,7 +152,6 @@ class HcxPcapngTool(Dependency):
     def generate_john_file(handshake, show_command=False):
         john_file = Configuration.temp('generated.john')
         if Configuration.linux.exists(john_file):
-            time.sleep(0.1)
             Configuration.linux.remove(john_file)
 
         command = [
@@ -174,14 +173,12 @@ class HcxPcapngTool(Dependency):
 
     def get_pmkid_hash(self, pcapng_file):
         if Configuration.linux.exists(self.pmkid_file):
-            time.sleep(0.1)
             Configuration.linux.remove(self.pmkid_file)
 
         command = 'hcxpcapngtool -o ' + self.pmkid_file + " " + pcapng_file
         hcxpcap_proc = Process(command)
         # hcxpcap_proc.wait()
 
-        time.sleep(0.1)
         if not Configuration.linux.exists(self.pmkid_file):
             return None
 

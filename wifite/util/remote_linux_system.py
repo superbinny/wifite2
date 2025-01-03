@@ -176,9 +176,15 @@ class remote_linux_system():
                 result_id, result = self.client.exec_cmd_ret(cmd, async_=True)
                 if result_id is None:
                     print('  <===!!! Get command %s Error :%s' % (cmd, result))
-                    return None
+                    if cmd.endswith('poll()'):
+                        result = -1
+                    else:
+                        result = None
+                    return result
             except Exception as ex:
                 remote_linux_system.pexception(ex, call_from='exec_cmd_ret', ex_info=cmd)
+                if cmd.endswith('poll()'):
+                    result = -1
 
         if self.IsSave and not self.Emul:
             self.serial.save(_hash, result)
