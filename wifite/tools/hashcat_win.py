@@ -96,7 +96,6 @@ class HcxDumpTool(Dependency):
     dependency_url = 'apt install hcxdumptool'
 
     def __init__(self, target, pcapng_file):
-        print('HcxDumpTool', pcapng_file)
         if Configuration.linux.exists(pcapng_file):
             Configuration.linux.remote(pcapng_file)
 
@@ -177,7 +176,7 @@ class HcxPcapngTool(Dependency):
 
         command = 'hcxpcapngtool -o ' + self.pmkid_file + " " + pcapng_file
         hcxpcap_proc = Process(command)
-        hcxpcap_proc.wait()
+        # hcxpcap_proc.wait()
 
         if not Configuration.linux.exists(self.pmkid_file):
             return None

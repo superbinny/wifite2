@@ -102,7 +102,7 @@ class remote_linux_system():
                 client = zerorpc.Client()
                 client.connect(self.connect_str)
             except Exception as ex:
-                Color.pexception(ex, call_from='get_connect')
+                remote_linux_system.pexception(ex, call_from='get_connect')
         return client
     
     @staticmethod
@@ -120,7 +120,7 @@ class remote_linux_system():
         try:
             ret = self.client.get_file_md5(file_path, async_=True)
         except Exception as ex:
-            Color.pexception(ex, call_from='get_remote_file_md5')
+            remote_linux_system.pexception(ex, call_from='get_remote_file_md5')
         return ret
     
     def reset(self):
@@ -141,7 +141,7 @@ class remote_linux_system():
             try:
                 result_id, result = self.client.exec_cmd_ret(cmd, async_=True)
             except Exception as ex:
-                Color.pexception(ex, call_from='exec_timeout')
+                remote_linux_system.pexception(ex, call_from='exec_timeout')
 
         t_beginning = time.time()
         seconds_passed = 0
@@ -167,20 +167,8 @@ class remote_linux_system():
         else:
             try:
                 result_id, result = self.client.exec_cmd_ret(cmd, async_=True)
-            except zerorpc.RemoteError:
-                print('\nexec_cmd_ret: cmd=%s' % cmd)
-                print('Error: exec_cmd_ret zerorpc.RemoteError')
-            except zerorpc.TimeoutExpired:
-                print('\nexec_cmd_ret: cmd=%s' % cmd)
-                print('Error: exec_cmd_ret zerorpc.TimeoutExpired')
-            except gevent.exceptions.LoopExit:
-                print('\nexec_cmd_ret: cmd=%s' % cmd)
-                print('Error: exec_cmd_ret gevent.exceptions.LoopExit')
-            except zerorpc.exceptions.LostRemote:
-                print('\nexec_cmd_ret: cmd=%s' % cmd)
-                print('Error: exec_cmd_ret zerorpc.exceptions.LostRemote')
             except Exception as ex:
-                Color.pexception(ex, call_from='exec_cmd_ret')
+                remote_linux_system.pexception(ex, call_from='exec_cmd_ret', ex_info=cmd)
 
         if self.IsSave and not self.Emul:
             self.serial.save(_hash, result)
@@ -188,11 +176,47 @@ class remote_linux_system():
         # an speedy.RemoteException will be thrown.
         return result
     
+    @classmethod
+    def pexception(cls, exception, call_from=None, ex_info=None):
+        """Prints an exception. Includes stack trace if necessary."""
+        if call_from is None:
+            _call_from = ''
+        else:
+            _call_from = f', {{R}}From: {{O}}{call_from}'
+
+        if ex_info is None:
+            _ex_info = ''
+        else:
+            _ex_info = f', {{R}}Ext: {{O}}{ex_info}'
+            
+        Color.pl('\n{!} {R}Error: {O}%s%s%s' % (str(exception), _call_from, _ex_info))
+
+        # Don't dump trace for the "no targets found" case.
+        if exception is zerorpc.RemoteError:
+            print('Error: exec_cmd_ret zerorpc.RemoteError')
+        elif exception is zerorpc.TimeoutExpired:
+            print('Error: exec_cmd_ret zerorpc.TimeoutExpired')
+        elif exception is gevent.exceptions.LoopExit:
+            print('Error: exec_cmd_ret gevent.exceptions.LoopExit')
+        elif exception is zerorpc.exceptions.LostRemote:
+            print('Error: exec_cmd_ret zerorpc.exceptions.LostRemote')
+
+        from ..config_win import Configuration
+        if Configuration.verbose > 0 or Configuration.print_stack_traces:
+            Color.pl('\n{!} {O}Full stack trace below')
+            from traceback import format_exc
+            Color.p('\n{!}    ')
+            err = format_exc().strip()
+            err = err.replace('\n', '\n{!} {C}   ')
+            err = err.replace('  File', '{W}File')
+            err = err.replace('  Exception: ', '{R}Exception: {O}')
+            Color.pl(err)
+
     def get_result(self, result):
         try:
             ret = self.client.result(result, async_=True)
         except Exception as ex:
-            Color.pexception(ex, call_from='get_result')
+            remote_linux_system.pexception(ex, call_from='get_result')
         return ret
     
     def Do(self, f, _hash=None):
@@ -206,7 +230,7 @@ class remote_linux_system():
             try:
                 result = self.client.exec_cmd(f, async_=True)
             except Exception as ex:
-                Color.pexception(ex, call_from='Do')
+                remote_linux_system.pexception(ex, call_from='Do')
 
         if self.IsSave and not self.Emul:
             self.serial.save(_hash, result)
@@ -226,7 +250,7 @@ DN = open(os.devnull, 'w')
             try:
                 self.client.doCommand('reset_namespace', async_=True)
             except Exception as ex:
-                Color.pexception(ex, call_from='doCommand')
+                remote_linux_system.pexception(ex, call_from='doCommand')
 
         self.Do('from subprocess import Popen, call, PIPE')
         self.Do('import os, platform')
@@ -271,14 +295,14 @@ DN = open(os.devnull, 'w')
         # print(cmd, '=', reslt)
         return reslt
 
-    def kill(self, process, sign='signal.SIGTERM'):
+    def kill(self, process, sign='SIGTERM'):
         if self.isLinux:
             # pgid = self.exec_cmd_ret("os.getpgid(%s.pid)" % process)
             self.kill_pid(process, sign)
         else:
             self.Do("%s.terminate()" % process)
 
-    def kill_pid(self, pid, sign='signal.SIGTERM'):
+    def kill_pid(self, pid, sign='SIGTERM'):
         # pgid = self.exec_cmd_ret("os.getpgid(%s.pid)" % process)
         self.Do("os.kill(%d, %s)" % (pid, sign))
         self.Do("os.waitpid(%d, 0)" % pid)
@@ -424,14 +448,14 @@ DN = open(os.devnull, 'w')
                 return remote_md5==local_md5
             return self.exists(dst)
         except Exception as ex:
-            Color.pexception(ex, call_from='copy_to_remote')
+            remote_linux_system.pexception(ex, call_from='copy_to_remote')
         return None
 
     def rename(self, old, new):
         try:
             result = self.client.rename(old, new, async_=True)
         except Exception as ex:
-            Color.pexception(ex, call_from='rename')
+            remote_linux_system.pexception(ex, call_from='rename')
         return result
 
     # 以下几个函数是关于文件读写和关闭的

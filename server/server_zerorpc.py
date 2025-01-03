@@ -21,7 +21,7 @@
 #       LastModify:  2014-11-20
 # *********************************************************
 
-import zerorpc
+import zerorpc, gevent
 import hashlib
 import os
 
@@ -158,5 +158,6 @@ if __name__ == "__main__":
     connet_str = f"tcp://{server_ip}:{server_port}"
     server = zerorpc.Server(MyServer())
     server.bind(connet_str)
-    server.run()
+    server_task = gevent.spawn(server.run)
+    server_task.join()
     print('Done!')

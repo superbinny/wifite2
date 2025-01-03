@@ -444,6 +444,7 @@ class Color:
             _call_from = ''
         else:
             _call_from = f',From:{call_from}'
+            
         cls.pl('\n{!} {R}Error: {O}%s%s' % (str(exception), _call_from))
 
         # Don't dump trace for the "no targets found" case.
