@@ -40,7 +40,7 @@ Misc problems:
   * Solution: User prompt when no devices are in monitor mode (ask first).
 * Some people want wifite to kill network manager, others don't.
   * Solution: User prompt to kill processes
-* Some people need --ignore-negative-one on some wifi cards.
+* Some people need --show-negative-one on some wifi cards.
 
 ------------------------------------------------------
 

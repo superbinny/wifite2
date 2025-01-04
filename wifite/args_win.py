@@ -169,12 +169,24 @@ class Arguments(object):
                           dest='ignore_cracked',
                           help=Color.s('Hides previously-cracked targets. (default: {G}off{W})'))
 
-        # Add by binny，忽略 -1 频道
-        glob.add_argument('-in1',
-                          '--ignore-negative-one',
+        # Add by binny，显示 -1 频道
+        glob.add_argument('-shown1',
+                          '--show-negative-one',
                           action='store_true',
-                          dest='ignore_negative_one',
-                          help=Color.s('Ignore negative One (-1) channel. (default: {G}off{W})'))
+                          dest='show_negative_one',
+                          help=Color.s('Show negative One (-1) channel. (default: {G}off{W})'))
+        
+        glob.add_argument('-shownbb',
+                          '--show-broadcast-bssid',
+                          action='store_true',
+                          dest='show_broadcast_bssid',
+                          help=Color.s('Show Broadcast BSSID. (default: {G}off{W})'))
+        
+        glob.add_argument('-shownbb',
+                          '--show-multicast-bssid',
+                          action='store_true',
+                          dest='show_multicast_bssid',
+                          help=Color.s('Show Multicast BSSID. (default: {G}off{W})'))
 
         glob.add_argument('--clients-only',
                           action='store_true',

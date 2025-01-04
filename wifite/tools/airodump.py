@@ -338,7 +338,7 @@ class Airodump(Dependency):
             'aireplay-ng',
             '-0',  # Deauthentication
             str(Configuration.num_deauths),  # Number of deauth packets to send
-            '--ignore-negative-one'
+            '--show-negative-one'
         ]
 
         for target3 in self.targets:

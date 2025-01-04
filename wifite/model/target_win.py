@@ -144,7 +144,7 @@ class Target(object):
 
     def validate(self):
         """ Checks that the target is valid. """
-        if not Configuration.ignore_negative_one:
+        if not Configuration.show_negative_one:
             if self.channel == '-1':
                 raise Exception('Ignoring target with Negative-One (-1) channel')
 

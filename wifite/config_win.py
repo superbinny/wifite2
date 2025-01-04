@@ -52,7 +52,7 @@ class Configuration(object):
     five_ghz = None
     ignore_cracked = None
     # Add by binny
-    ignore_negative_one = None
+    show_negative_one = None
     remote_server_port = None
 
     ignore_essids = None
@@ -170,7 +170,7 @@ class Configuration(object):
         cls.ignore_cracked = False  # Ignore previously-cracked BSSIDs
 
         # Add by binny
-        cls.ignore_negative_one = False  # Ignore negative One channel
+        cls.show_negative_one = False  # Ignore negative One channel
         cls.remote_server_port = ""  # Remote server and port
         cls.linux = linux # Provide remote Linux support
 
@@ -473,9 +473,9 @@ class Configuration(object):
                 Color.pl('{!} {R}Previously-cracked access points not found in %s' % cls.cracked_file)
                 cls.ignore_cracked = False
 
-        if args.ignore_negative_one:
+        if args.show_negative_one:
             Color.pl('{+} {C}option: {O}ignoring {R}-1{O} channel')
-            cls.ignore_negative_one = args.ignore_negative_one
+            cls.show_negative_one = args.show_negative_one
 
         if args.clients_only:
             cls.clients_only = True

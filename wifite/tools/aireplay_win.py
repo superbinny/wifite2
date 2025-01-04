@@ -250,7 +250,7 @@ class Aireplay(Dependency):
         if Configuration.interface is None:
             raise Exception('Wireless interface must be defined (-i)')
 
-        cmd = ['aireplay-ng', '--ignore-negative-one']
+        cmd = ['aireplay-ng', '--show-negative-one']
 
         if client_mac is None and len(target.clients) > 0:
             # Client MAC wasn't specified, but there's an associated client. Use that.
@@ -389,7 +389,7 @@ class Aireplay(Dependency):
             'aireplay-ng',
             '-0',  # Deauthentication
             str(num_deauths),
-            '--ignore-negative-one',
+            '--show-negative-one',
             '-a', target_bssid,  # Target AP
             '-D'  # Skip AP detection
         ]
