@@ -228,7 +228,8 @@ class Target(object):
         channel = Color.s(f'{channel_color}{str(self.channel).rjust(3)}')
 
         encryption = self.encryption.rjust(3)
-        if 'WEP' in encryption:
+        if 'WEP' in encryption or encryption == 'OPN':
+            encryption = encryption.ljust(5)
             encryption = Color.s('{G}%s' % encryption)
         elif 'WPA' in encryption:
             if 'PSK' in self.authentication:

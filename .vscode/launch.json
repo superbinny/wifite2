@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "wifite-win.py",
-            "args":"--remote-server-port=192.168.192.130:12999 -pow=30 --show-negative-one --show-broadcast-bssid --show-multicast-bssid"
+            "args":"--remote-server-port=192.168.192.130:12999 --show-negative-one --show-broadcast-bssid --show-multicast-bssid"
         }
     ]
 }

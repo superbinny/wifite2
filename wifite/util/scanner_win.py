@@ -355,24 +355,28 @@ class Scanner(object):
         chosen_targets = []
 
         Color.p(input_str)
-        for choice in input().split(','):
-            choice = choice.strip()
-            if choice.lower() == 'all':
-                chosen_targets = self.targets
-                break
-            if '-' in choice:
-                # User selected a range
-                (lower, upper) = [int(x) - 1 for x in choice.split('-')]
-                for i in range(lower, min(len(self.targets), upper + 1)):
-                    chosen_targets.append(self.targets[i])
-            elif choice.isdigit():
-                choice = int(choice)
-                if choice > len(self.targets):
-                    Color.pl('    {!} {O}Invalid target index (%d)... ignoring' % choice)
-                    continue
+        # 在等待按键的时候，再按 Ctrl+C 则退出程序
+        try:
+            for choice in input().split(','):
+                choice = choice.strip()
+                if choice.lower() == 'all':
+                    chosen_targets = self.targets
+                    break
+                if '-' in choice:
+                    # User selected a range
+                    (lower, upper) = [int(x) - 1 for x in choice.split('-')]
+                    for i in range(lower, min(len(self.targets), upper + 1)):
+                        chosen_targets.append(self.targets[i])
+                elif choice.isdigit():
+                    choice = int(choice)
+                    if choice > len(self.targets):
+                        Color.pl('    {!} {O}Invalid target index (%d)... ignoring' % choice)
+                        continue
 
-                chosen_targets.append(self.targets[choice - 1])
-
+                    chosen_targets.append(self.targets[choice - 1])
+                
+        except KeyboardInterrupt:
+            exit(0)
         return chosen_targets
 
 
