@@ -5,7 +5,7 @@ from ..util.color_win import Color
 from ..config_win import Configuration
 
 import re
-
+from datetime import datetime
 
 class WPSState:
     NONE, UNLOCKED, LOCKED, UNKNOWN = list(range(4))
@@ -82,6 +82,14 @@ class Target(object):
         self.is_negative_one = False
         self.is_broadcast_bssid = False
         self.is_multicast_bssid = False
+        # 节点第一次出现的时间
+        self.first_time = datetime.now()
+        # 节点当前的状态，是否存在
+        self.exist = True
+        self.history = []
+        # 用于保存历史的状态，什么时候第一次出现，什么时候消失等等
+        # 以后还可以用于保存单个节点的变化情况，复杂的情况用数据库记录了
+        self.history.append((self.first_time, self.exist))
 
         # airodump sometimes does not report the encryption type for some reason
         # In this case (len = 0), defaults to WPA (which is the most common)
@@ -227,17 +235,23 @@ class Target(object):
         channel_color = '{C}' if int(self.channel) > 14 else '{G}'
         channel = Color.s(f'{channel_color}{str(self.channel).rjust(3)}')
 
-        encryption = self.encryption.rjust(3)
+        encryption = self.encryption.strip()
+        encryption_col = 7
         if 'WEP' in encryption or encryption == 'OPN':
-            encryption = encryption.ljust(5)
+            encryption = encryption.ljust(encryption_col)
             encryption = Color.s('{G}%s' % encryption)
         elif 'WPA' in encryption:
             if 'PSK' in self.authentication:
-                encryption = Color.s('{O}%s-P' % encryption)
+                encryption = encryption + '-P'
+                encryption = encryption.ljust(encryption_col)
+                encryption = Color.s('{O}%s' % encryption)
             elif 'MGT' in self.authentication:
-                encryption = Color.s('{R}%s-E' % encryption)
+                encryption = encryption + '-E'
+                encryption = encryption.ljust(encryption_col)
+                encryption = Color.s('{R}%s' % encryption)
             else:
-                encryption = Color.s('{O}%s  ' % encryption)
+                encryption = encryption.ljust(encryption_col)
+                encryption = Color.s('{O}%s' % encryption)
 
         power = f'{str(self.power).rjust(3)}db'
         if self.power > 50:
