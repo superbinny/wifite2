@@ -85,7 +85,8 @@ class Scanner(object):
         self.targets = []
         self.target = None  # Target specified by user (based on ESSID/BSSID)
         self.err_msg = None
-        if Configuration.is_windows:
+        if Configuration.use_ctrlp_pause and Configuration.is_windows:
+            # 如果设置了 Configuration.use_ctrlp_pause，则改为 Ctrl+P 停止
             thread_pause_hotKey = PauseHotKey("thread_pause_hotKey")
             thread_pause_hotKey.start()
 
@@ -139,7 +140,10 @@ class Scanner(object):
                     outline += '. Found'
                     outline += ' {G}%d{W} target(s),' % target_count
                     outline += ' {G}%d{W} client(s).' % client_count
-                    outline += ' {O}Ctrl+P{W} when ready '
+                    if Configuration.use_ctrlp_pause:
+                        outline += ' {O}Ctrl+P{W} when ready '
+                    else:
+                        outline += ' {O}Ctrl+C{W} when ready '
                     Color.clear_entire_line()
                     Color.p(outline)
 

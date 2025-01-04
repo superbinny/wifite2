@@ -175,6 +175,7 @@ class Configuration(object):
         cls.show_negative_one = False  # Ignore negative One channel
         cls.show_broadcast_bssid = False  # Show Broadcast BSSID
         cls.show_multicast_bssid = False  # Show Multicast BSSID
+        cls.use_ctrlp_pause = False  # Use Ctrl+P to pause the scan
         cls.remote_server_port = ""  # Remote server and port
         cls.linux = linux # Provide remote Linux support
 
@@ -482,12 +483,16 @@ class Configuration(object):
             cls.show_negative_one = args.show_negative_one
 
         if args.show_broadcast_bssid:
-            Color.pl('{+} {C}option: {O}show {R}-1{O} broadcast BSSID')
+            Color.pl('{+} {C}option: {O}show broadcast BSSID')
             cls.show_broadcast_bssid = args.show_broadcast_bssid
 
         if args.show_multicast_bssid:
-            Color.pl('{+} {C}option: {O}show {R}-1{O} multicast BSSID')
+            Color.pl('{+} {C}option: {O}show multicast BSSID')
             cls.show_multicast_bssid = args.show_multicast_bssid
+
+        if args.use_ctrlp_pause:
+            Color.pl('{+} {C}option: {O}Use {R}Ctrl+P{O} to pause scan hot-point')
+            cls.use_ctrlp_pause = args.use_ctrlp_pause
 
         if args.clients_only:
             cls.clients_only = True

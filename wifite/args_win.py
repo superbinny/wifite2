@@ -176,17 +176,23 @@ class Arguments(object):
                           dest='show_negative_one',
                           help=Color.s('Show negative One (-1) channel. (default: {G}off{W})'))
         
-        glob.add_argument('-shownbb',
+        glob.add_argument('-showbb',
                           '--show-broadcast-bssid',
                           action='store_true',
                           dest='show_broadcast_bssid',
                           help=Color.s('Show Broadcast BSSID. (default: {G}off{W})'))
         
-        glob.add_argument('-shownmb',
+        glob.add_argument('-showmb',
                           '--show-multicast-bssid',
                           action='store_true',
                           dest='show_multicast_bssid',
                           help=Color.s('Show Multicast BSSID. (default: {G}off{W})'))
+        
+        glob.add_argument('-ucp',
+                          '--use-ctrlp-pause',
+                          action='store_true',
+                          dest='use_ctrlp_pause',
+                          help=Color.s('Use ctrl+p to stop scan. (default: {G}off{W})'))
 
         glob.add_argument('--clients-only',
                           action='store_true',
