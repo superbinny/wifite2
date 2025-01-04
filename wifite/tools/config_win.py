@@ -174,7 +174,7 @@ class Configuration(object):
         # Add by binny
         cls.show_negative_one = False  # Ignore negative One channel
         cls.show_broadcast_bssid = False  # Show Broadcast BSSID
-        cls.show_multicastbssid = False  # Show Multicast BSSID
+        cls.show_multicast_bssid = False  # Show Multicast BSSID
         cls.remote_server_port = ""  # Remote server and port
         cls.linux = linux # Provide remote Linux support
 
@@ -485,7 +485,7 @@ class Configuration(object):
             Color.pl('{+} {C}option: {O}show broadcast BSSID')
             cls.show_broadcast_bssid = args.show_broadcast_bssid
 
-        if args.show_broadcast_bssid:
+        if args.show_multicast_bssid:
             Color.pl('{+} {C}option: {O}show multicast BSSID')
             cls.show_multicast_bssid = args.show_multicast_bssid
 
