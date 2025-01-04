@@ -13,7 +13,6 @@ class CrackResult(object):
     """ Abstract class containing results from a crack session """
     # File to save cracks to, in PWD
     cracked_file = Configuration.cracked_file
-    linux = None
 
     def __init__(self):
         self.date = int(time.time())
@@ -117,7 +116,7 @@ class CrackResult(object):
 
     @classmethod
     def load_all(cls):
-        if not cls.linux.exists(cls.cracked_file):
+        if not Configuration.linux.exists(cls.cracked_file):
             return []
         # with open(cls.cracked_file, 'r') as json_file:
         data = Configuration.linux.readfile(cls.cracked_file)
