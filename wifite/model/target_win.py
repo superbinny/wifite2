@@ -78,6 +78,10 @@ class Target(object):
         self.channel = fields[3].strip()
         self.encryption = fields[5].strip()
         self.authentication = fields[7].strip()
+        # 用于指示热点的状态，当显示这些无用的热点或者破解的时候，排除该热点
+        self.is_negative_one = False
+        self.is_broadcast_bssid = False
+        self.is_multicast_bssid = False
 
         # airodump sometimes does not report the encryption type for some reason
         # In this case (len = 0), defaults to WPA (which is the most common)
@@ -144,19 +148,22 @@ class Target(object):
 
     def validate(self):
         """ Checks that the target is valid. """
-        if not Configuration.show_negative_one:
-            if self.channel == '-1':
-                raise Exception('Ignoring target with Negative-One (-1) channel')
+        if self.channel == '-1':
+            self.is_negative_one = True
+            if not Configuration.show_negative_one:
+               raise Exception('Ignoring target with Negative-One (-1) channel')
 
-        if not Configuration.show_broadcast_bssid:
             # Filter broadcast/multicast BSSIDs, see https://github.com/derv82/wifite2/issues/32
-            bssid_broadcast = re.compile(r'^(ff:ff:ff:ff:ff:ff|00:00:00:00:00:00)$', re.IGNORECASE)
-            if bssid_broadcast.match(self.bssid):
+        bssid_broadcast = re.compile(r'^(ff:ff:ff:ff:ff:ff|00:00:00:00:00:00)$', re.IGNORECASE)
+        if bssid_broadcast.match(self.bssid):
+            self.is_broadcast_bssid = True
+            if not Configuration.show_broadcast_bssid:
                 raise Exception(f'Ignoring target with Broadcast BSSID ({self.bssid})')
         
-        if not Configuration.show_multicast_bssid:
-            bssid_multicast = re.compile(r'^(01:00:5e|01:80:c2|33:33)', re.IGNORECASE)
-            if bssid_multicast.match(self.bssid):
+        bssid_multicast = re.compile(r'^(01:00:5e|01:80:c2|33:33)', re.IGNORECASE)
+        if bssid_multicast.match(self.bssid):
+            self.is_multicast_bssid = True
+            if not Configuration.show_multicast_bssid:
                 raise Exception(f'Ignoring target with Multicast BSSID ({self.bssid})')
     
     def to_str(self, show_bssid=False, show_manufacturer=False):
@@ -183,12 +190,16 @@ class Target(object):
         else:
             essid = essid.rjust(max_essid_len - count_cn)
 
-        if self.essid_known:
-            # Known ESSID
-            essid = Color.s('{C}%s' % essid)
+        if self.is_negative_one or self.is_negative_one or self.is_negative_one:
+            # 错误的显示红色
+            essid = Color.s('{R}%s' % essid)
         else:
-            # Unknown ESSID
-            essid = Color.s('{O}%s' % essid)
+            if self.essid_known:
+                # Known ESSID
+                essid = Color.s('{C}%s' % essid)
+            else:
+                # Unknown ESSID
+                essid = Color.s('{O}%s' % essid)
 
         # if self.power < self.max_power:
         #     var = self.max_power
