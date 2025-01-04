@@ -53,6 +53,8 @@ class Configuration(object):
     ignore_cracked = None
     # Add by binny
     show_negative_one = None
+    show_broadcast_bssid = None
+    show_negative_one = None
     remote_server_port = None
 
     ignore_essids = None
@@ -171,6 +173,8 @@ class Configuration(object):
 
         # Add by binny
         cls.show_negative_one = False  # Ignore negative One channel
+        cls.show_broadcast_bssid = False  # Show Broadcast BSSID
+        cls.show_multicast_bssid = False  # Show Multicast BSSID
         cls.remote_server_port = ""  # Remote server and port
         cls.linux = linux # Provide remote Linux support
 
@@ -474,8 +478,16 @@ class Configuration(object):
                 cls.ignore_cracked = False
 
         if args.show_negative_one:
-            Color.pl('{+} {C}option: {O}ignoring {R}-1{O} channel')
+            Color.pl('{+} {C}option: {O}show {R}-1{O} channel')
             cls.show_negative_one = args.show_negative_one
+
+        if args.show_broadcast_bssid:
+            Color.pl('{+} {C}option: {O}show {R}-1{O} broadcast BSSID')
+            cls.show_broadcast_bssid = args.show_broadcast_bssid
+
+        if args.show_multicast_bssid:
+            Color.pl('{+} {C}option: {O}show {R}-1{O} multicast BSSID')
+            cls.show_multicast_bssid = args.show_multicast_bssid
 
         if args.clients_only:
             cls.clients_only = True

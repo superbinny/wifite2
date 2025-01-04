@@ -148,14 +148,16 @@ class Target(object):
             if self.channel == '-1':
                 raise Exception('Ignoring target with Negative-One (-1) channel')
 
-        # Filter broadcast/multicast BSSIDs, see https://github.com/derv82/wifite2/issues/32
-        bssid_broadcast = re.compile(r'^(ff:ff:ff:ff:ff:ff|00:00:00:00:00:00)$', re.IGNORECASE)
-        if bssid_broadcast.match(self.bssid):
-            raise Exception(f'Ignoring target with Broadcast BSSID ({self.bssid})')
-
-        bssid_multicast = re.compile(r'^(01:00:5e|01:80:c2|33:33)', re.IGNORECASE)
-        if bssid_multicast.match(self.bssid):
-            raise Exception(f'Ignoring target with Multicast BSSID ({self.bssid})')
+        if not Configuration.show_broadcast_bssid:
+            # Filter broadcast/multicast BSSIDs, see https://github.com/derv82/wifite2/issues/32
+            bssid_broadcast = re.compile(r'^(ff:ff:ff:ff:ff:ff|00:00:00:00:00:00)$', re.IGNORECASE)
+            if bssid_broadcast.match(self.bssid):
+                raise Exception(f'Ignoring target with Broadcast BSSID ({self.bssid})')
+        
+        if not Configuration.show_multicast_bssid:
+            bssid_multicast = re.compile(r'^(01:00:5e|01:80:c2|33:33)', re.IGNORECASE)
+            if bssid_multicast.match(self.bssid):
+                raise Exception(f'Ignoring target with Multicast BSSID ({self.bssid})')
     
     def to_str(self, show_bssid=False, show_manufacturer=False):
         # sourcery no-metrics

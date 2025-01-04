@@ -182,7 +182,7 @@ class Arguments(object):
                           dest='show_broadcast_bssid',
                           help=Color.s('Show Broadcast BSSID. (default: {G}off{W})'))
         
-        glob.add_argument('-shownbb',
+        glob.add_argument('-shownmb',
                           '--show-multicast-bssid',
                           action='store_true',
                           dest='show_multicast_bssid',
