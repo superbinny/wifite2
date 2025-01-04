@@ -6,6 +6,7 @@ from .pmkid_win import AttackPMKID
 from .wep_win import AttackWEP
 from .wpa_win import AttackWPA
 from .wps_win import AttackWPS
+from .brute_force_win import AttackBruteForce
 from ..config_win import Configuration
 from ..model.target_win import WPSState
 from ..util.color_win import Color
@@ -61,6 +62,10 @@ class AttackAll(object):
 
         attacks = []
 
+        if Configuration.use_brute_force_only:
+            attacks.append(AttackBruteForce(target))
+            return True
+
         if Configuration.use_eviltwin:
             # TODO: EvilTwin attack
             pass
@@ -92,6 +97,9 @@ class AttackAll(object):
                 # Handshake capture
                 if not Configuration.use_pmkid_only:
                     attacks.append(AttackWPA(target))
+
+        # 对任何网络都可以使用暴力破解
+        attacks.append(AttackBruteForce(target))
 
         if not attacks:
             Color.pl('{!} {R}Error: {O}Unable to attack: no attacks available')

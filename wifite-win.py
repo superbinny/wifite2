@@ -11,4 +11,7 @@
 # 调用可以参考以下例子，可以显示 -1 频道：
 #     ./wifite-win.py --remote-server-port="192.168.192.130:12999" --show-negative-one
 from wifite import __main__win
-__main__win.entry_point()
+try:
+    __main__win.entry_point()
+except KeyboardInterrupt:
+    exit(0)

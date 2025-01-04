@@ -88,6 +88,7 @@ class Configuration(object):
     use_reaver = None
     use_eviltwin = None
     use_pmkid_only = None
+    use_brute_force_only = None
     wep_attacks = None
     wep_crack_at_ivs = None
     wep_filter = None
@@ -226,6 +227,9 @@ class Configuration(object):
         cls.use_pmkid_only = False  # Only use PMKID Capture+Crack attack
         cls.pmkid_timeout = 300  # Time to wait for PMKID capture
         cls.dont_use_pmkid = False  # Don't use PMKID attack
+        
+        # Brute Force variables
+        cls.use_brute_force_only = False  # Only use Brute Force attack
 
         # WPS variables
         cls.wps_filter = False  # Only attack WPS networks
@@ -343,6 +347,7 @@ class Configuration(object):
         cls.parse_wpa_args(args)
         cls.parse_wps_args(args)
         cls.parse_pmkid_args(args)
+        cls.parse_brute_force_args(args)
         cls.parse_encryption()
 
         # EvilTwin
@@ -675,6 +680,12 @@ class Configuration(object):
         if args.dont_use_pmkid:
             cls.dont_use_pmkid = True
             Color.pl('{+} {C}option:{W} will NOT use {C}PMKID{W} attack on WPA networks')
+
+    @classmethod
+    def parse_brute_force_args(cls, args):
+        if args.use_brute_force_only:
+            cls.use_brute_force_only = True
+            Color.pl('{+} {C}option:{W} will ONLY use {C}Brute Force{W} attack on all networks')
 
     @classmethod
     def parse_encryption(cls):

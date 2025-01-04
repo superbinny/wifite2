@@ -204,15 +204,16 @@ class Target(object):
         else:
             if self.essid_known:
                 # Known ESSID
-                essid = Color.s('{C}%s' % essid)
+                essid = Color.s('{O}%s' % essid)
             else:
                 # Unknown ESSID
-                essid = Color.s('{O}%s' % essid)
+                essid = Color.s('{C}%s' % essid)
 
         # if self.power < self.max_power:
         #     var = self.max_power
 
         # Add a '*' if we decloaked the ESSID
+        # 解码的隐藏 WiFi
         decloaked_char = '*' if self.decloaked else ' '
         essid += Color.s('{P}%s' % decloaked_char)
 

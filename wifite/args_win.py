@@ -32,6 +32,7 @@ class Arguments(object):
         self._add_wpa_args(parser.add_argument_group(Color.s('{C}WPA{W}')))
         self._add_wps_args(parser.add_argument_group(Color.s('{C}WPS{W}')))
         self._add_pmkid_args(parser.add_argument_group(Color.s('{C}PMKID{W}')))
+        self._add_brute_force_args(parser.add_argument_group(Color.s('{C}PMKID{W}')))
         self._add_eviltwin_args(parser.add_argument_group(Color.s('{C}EVIL TWIN{W}')))
         self._add_command_args(parser.add_argument_group(Color.s('{C}COMMANDS{W}')))
 
@@ -503,6 +504,12 @@ class Arguments(object):
                            help=Color.s('Time to wait for PMKID capture (default: {G}%d{W} seconds)'
                                         % self.config.pmkid_timeout))
 
+    def _add_brute_force_args(self, pmkid):
+        pmkid.add_argument('--brute-force',
+                           action='store_true',
+                           dest='use_brute_force_only',
+                           help=Color.s('{O}Only{W} use {C}brute force{W} attacks (default: {G}off{W})'))
+        
     @staticmethod
     def _add_command_args(commands):
         commands.add_argument('--cracked',
