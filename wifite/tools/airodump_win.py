@@ -282,7 +282,8 @@ class Airodump(Dependency):
                         target4 = Target(row)
                         targets2.append(target4)
                     except Exception as e:
-                        print(f"Error parsing target: {e}")
+                        if Configuration.verbose > 0:
+                            print(f"Error parsing target: {e}")
                 continue
 
         return targets2

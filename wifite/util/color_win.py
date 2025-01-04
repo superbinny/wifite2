@@ -419,7 +419,8 @@ class Color:
     def clear_entire_line(cls):
         import os
         if cls.is_windows:
-            rows, columns = os.get_terminal_size()
+            rows, _columns = os.get_terminal_size()
+            columns = 2*_columns
         else:
             (rows, columns) = os.popen('stty size', 'r').read().split()
         cls.p('\r' + (' ' * int(columns)) + '\r')

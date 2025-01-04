@@ -11,8 +11,8 @@ from shlex import quote as shlex_quote
 
 # 原来程序中，通过 Ctrl+C 来终止程序，这容易造成程序早退并且可能引起 zerorpc 通讯中断
 # 所以修改为 Ctrl+P 来终止扫描，用线程的方式，而不是出错的方式
-exitControl_command = False
 pauseControl_command = False
+exitControl_command = False
 
 if Configuration.is_windows:
     import threading
@@ -30,14 +30,16 @@ if Configuration.is_windows:
         global exitControl_command
         user32 = ctypes.windll.user32
         cHotKeyCtrlP = 1008 # 热键的标识id
-        cHotKeyCtrlQ = cHotKeyCtrlP + 1
+        # cHotKeyCtrlQ = cHotKeyCtrlP + 1
+        cHotKeyCtrlC = cHotKeyCtrlP + 2
         VK_P = 0x50
-        VK_Q = 0x51
+        # VK_Q = 0x51
+        VK_C = 0x43
         while(True):
             if not user32.RegisterHotKey(None, cHotKeyCtrlP, win32con.MOD_CONTROL, VK_P): # Ctrl+P=暂停扫描
                 Color.pl('    {!} {O}Unable to register id: %d' % cHotKeyCtrlP)
-            if not user32.RegisterHotKey(None, cHotKeyCtrlQ, win32con.MOD_CONTROL, VK_Q): # Ctrl+Q=退出程序
-                Color.pl('    {!} {O}Unable to register id%d' % cHotKeyCtrlQ)
+            if not user32.RegisterHotKey(None, cHotKeyCtrlC, win32con.MOD_CONTROL, VK_C): # Ctrl+Q=退出程序
+                Color.pl('    {!} {O}Unable to register id%d' % cHotKeyCtrlC)
 
             try:
                 msg = ctypes.wintypes.MSG()
@@ -45,15 +47,15 @@ if Configuration.is_windows:
                     if msg.message == win32con.WM_HOTKEY:
                         if msg.wParam == cHotKeyCtrlP:
                             pauseControl_command = True
-                        elif msg.wParam == cHotKeyCtrlQ:
+                        elif msg.wParam == cHotKeyCtrlC:
                             exitControl_command = True
-                            return
+                            exit(0)
                     user32.TranslateMessage(ctypes.byref(msg))
                     user32.DispatchMessageA(ctypes.byref(msg))
             finally:
                 del msg
                 user32.UnregisterHotKey(None, cHotKeyCtrlP)
-                user32.UnregisterHotKey(None, cHotKeyCtrlQ)
+                user32.UnregisterHotKey(None, cHotKeyCtrlC)
 
     # 监控 Ctrl+P 的线程
     class PauseHotKey(threading.Thread):
@@ -152,7 +154,7 @@ class Scanner(object):
             return self._extracted_from_find_targets_50()
         
         if exitControl_command:
-            return True
+            exit(0)
         
         if pauseControl_command:
             return self._extracted_from_find_targets_50()
