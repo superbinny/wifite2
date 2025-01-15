@@ -36,6 +36,11 @@ import gevent.exceptions
 import zerorpc, gevent
 from ..util.color_win import Color
 
+try:
+    TIME_FACTOR = float(os.environ.get('ZPC_TEST_TIME_FACTOR'))
+except TypeError:
+    TIME_FACTOR = 0.2
+    
 class FileType():
     is_remote = False
     filename = ''
@@ -99,7 +104,7 @@ class remote_linux_system():
                 # client = zerorpc.Client()
                 # client.set_heartbeat(1, 3)  # 心跳间隔1秒，超时时间3秒
                 # print(f'Connect to {self.connect_str} ...')
-                client = zerorpc.Client()
+                client = zerorpc.Client(timeout=TIME_FACTOR * 2)
                 client.connect(self.connect_str)
             except Exception as ex:
                 remote_linux_system.pexception(ex, call_from='get_connect')
@@ -130,8 +135,8 @@ class remote_linux_system():
             remote_linux_system.pexception(ex, call_from='get_result')
         return ret
    
-    def reset(self):
-        self.ResetNamespace()
+    def reset(self, debug=False):
+        self.ResetNamespace(debug=debug)
         
     def setEmulPath(self, p):
         self.emul_path = p
@@ -210,7 +215,7 @@ class remote_linux_system():
         if self.IsSave and not self.Emul:
             self.serial.save(_hash, result)
 
-    def ResetNamespace(self):
+    def ResetNamespace(self, debug=False):
         # print 'doCommand:\t', f
         '''
 from subprocess import Popen, call, PIPE
@@ -221,7 +226,7 @@ DN = open(os.devnull, 'w')
         '''
         if not self.Emul:
             try:
-                self.client.doCommand('reset_namespace', async_=True)
+                self.client.doCommand('reset_namespace', debug=debug, async_=True)
             except Exception as ex:
                 remote_linux_system.pexception(ex, call_from='doCommand')
 
@@ -415,7 +420,9 @@ DN = open(os.devnull, 'w')
             f = open(src, 'rb')
             data = f.read()
             f.close()
-            result = self.client.set_file(dst, data, overwrite=overwrite, async_=True)
+            if overwrite and self.client.exists(dst):
+                self.client.remove(dst)
+            result = self.client.writefile(dst, data, mode='wb', async_=True)
             if not result:
                 return False
             if check:
@@ -464,7 +471,6 @@ DN = open(os.devnull, 'w')
         return lines
 
     def writefile(self, p, data, mode='wb', encoding='utf-8'):
-        fhandle = 'fhandle' + remote_linux_system.generate_random_string(6)
         if type(p) is FileType:
             filename = p.filename
             if not p.is_remote:
@@ -475,8 +481,7 @@ DN = open(os.devnull, 'w')
         else:
             filename = p
 
-        self.client.set_file(filename, data, overwrite=True, async_=True)
-        return self.exists(filename)
+        return self.client.writefile(filename, data, mode='w', async_=True)
     
     def clearfile(self, filename, fhandle='fhandle'):
         self.open(filename, 'w', fhandle=fhandle)

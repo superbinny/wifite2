@@ -13,10 +13,10 @@ def generate_random_string(length):
     letters = string.ascii_letters + string.digits
     return ''.join(random.choice(letters) for _ in range(length))
 
-def init_linux(server_ip, server_port, isEmul=False, isSave=False):
+def init_linux(server_ip, server_port, is_debug=False, isEmul=False, isSave=False):
     linux = remote_linux_system(server_ip=server_ip, server_port=server_port, isEmul=isEmul, isSave=isSave)
     linux.client = linux.get_connect()
-    linux.reset()
+    linux.reset(debug=is_debug)
     return linux
 
 # 模拟远端的 popen
@@ -111,16 +111,21 @@ class Configuration(object):
     wps_pixie_timeout = None
     wps_timeout_threshold = None
 
+    # about data path
+    # every in here
+    base_dir = None
+    # like password files
+    data_dir = None
+
     @classmethod
     def copy_local_to_remote(cls, src, check=False):
         local_file = src.replace('/', '\\')
         if os.path.exists(local_file):
             # print(f'存在密码文件 {src}，位于本地，拷贝到远程文件夹')
             # 将本地文件拷贝到远程的当前用户目录下：
-            home_dir = cls.linux.get_user_home()
             if src.startswith('./'):
                 src = src[2:]
-            remote_file = cls.linux.join(f'{home_dir}/wifite2/data', src)
+            remote_file = cls.linux.join(cls.data_dir, src)
             if cls.linux.exists(remote_file):
                 # 如果两边文件的 md5 不相同，则不是同一个文件
                 if check:
@@ -251,6 +256,9 @@ class Configuration(object):
         cls.check_handshake = None
         cls.crack_handshake = False
 
+        # Default dictionary for cracking
+        cls.cracked_file = 'cracked.json'
+
         # A list to cache all checked commands (e.g. `which hashcat` will execute only once)
         cls.existing_commands = {}
 
@@ -261,8 +269,9 @@ class Configuration(object):
             Color.pl('\n{!} {O}Please use {R} --remote-server-port/-rsp {O} to specify the ip and port of the remote server, Shutting down...{W}')
             exit(0)
 
-        # Default dictionary for cracking
-        cls.cracked_file = 'cracked.json'
+        home_dir = cls.linux.get_user_home()
+        cls.base_dir = f'{home_dir}/wifite2'
+        cls.data_dir = f'{home_dir}/wifite2/data'
         wordlists = [
             './wordlist-probable.txt',  # Local file (ran from cloned repo)
             '/usr/share/dict/wordlist-probable.txt',  # setup.py with prefix=/usr
@@ -289,11 +298,11 @@ class Configuration(object):
         
         if not cls.wpa_handshake_dir.startswith('/'):
             # 设置为远程：
-            home_dir = cls.linux.get_user_home()
             src = cls.wpa_handshake_dir
             if src.startswith('./'):
                 src = src[2:]
-            remote_dir = cls.linux.join(f'{home_dir}/wifite2', src)
+
+            remote_dir = cls.linux.join(cls.base_dir, src)
             # 后续 PMKID 会自动创建这个目录
             # if not cls.linux.exists(remote_dir):
             #     cls.linux.makedirs(remote_dir)
@@ -472,7 +481,6 @@ class Configuration(object):
                      ', '.join(args.ignore_essids))
 
         from .model.result_win import CrackResult
-        CrackResult.linux = cls.linux
         cls.ignore_cracked = CrackResult.load_ignored_bssids(args.ignore_cracked)
 
         if args.ignore_cracked:

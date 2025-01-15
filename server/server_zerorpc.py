@@ -31,6 +31,11 @@ import string
 # pip install netifaces
 import netifaces as ni
 
+try:
+    TIME_FACTOR = float(os.environ.get('ZPC_TEST_TIME_FACTOR'))
+except TypeError:
+    TIME_FACTOR = 0.2
+
 def get_local_ip_using_netifaces():
     interfaces = ni.interfaces()
     for interface in interfaces:
@@ -42,7 +47,7 @@ def get_local_ip_using_netifaces():
                     return ip_address
     return None
         
-class MyServer():
+class MyServer(zerorpc.Server):
     def __init__(self):
         super(self.__class__, self).__init__()
         self.init()
@@ -67,6 +72,7 @@ class MyServer():
     def exec_cmd_ret(self, request):
         result_id = 'result' + MyServer.generate_random_string(6)
         cmd = f'{result_id}=' + request
+        self.debug_print("exec_cmd_ret: %s" % cmd)
         try:
             exec(cmd, self.globals, self.locals)
         except NameError as ex:
@@ -97,19 +103,22 @@ class MyServer():
             print(msg)
 
     def exec_cmd(self, request):
+        self.debug_print("exec_cmd: %s" % request)
         try:
-            self.debug_print(f'exec_cmd {request}')
             exec(request, self.globals, self.locals)
         except Exception as e:
             print('Exec: %s' % request)
             print('Error: %s' % e)
 
-    def doCommand(self, request):
+    def doCommand(self, request, debug=False):
+        self.debug_print("doCommand: %s" % request)
+        if debug:
+            self.globals['debug'] = debug
         if request == 'reset_namespace':
             self.init()
-        return f"doCommand, {request}"
 
     def get_file(self, request):
+        self.debug_print("get_file: %s" % request)
         if os.path.exists(request):
             try:
                 f = open(request, 'rb')
@@ -121,21 +130,18 @@ class MyServer():
         else:
             return None
 
-    def set_file(self, request, data, overwrite=False):
-        if os.path.exists(request):
-            if overwrite:
-                os.remove(request)
-            else:
-                return True
+    def writefile(self, request, data, mode='w'):
+        self.debug_print("writefile: %s, mode=%s" % (request, mode))
         try:
-            f = open(request, 'wb')
+            f = open(request, mode)
             f.write(data)
             f.close()
-            return os.path.exists(f)
+            return os.path.exists(request)
         except:
             return False
         
     def get_file_md5(self, file_path):
+        self.debug_print("get_file_md5: %s" % file_path)
         # 获取文件的 md5
         hash_md5 = hashlib.md5()
         with open(file_path, "rb") as f:
@@ -148,6 +154,7 @@ class MyServer():
             Renames file 'old' to 'new', works with separate partitions.
             Thanks to hannan.sadar
         """
+        self.debug_print("rename: %s=>%s" % (source, destination))
         if not os.path.exists(source):
             print(f"The file {source} not exist!")
             return 'ErrorNotExist'
@@ -173,7 +180,7 @@ if __name__ == "__main__":
     print(f'Listen to {server_ip}:{server_port}')
     print(f'Client connect to {get_local_ip_using_netifaces()}:{server_port}')
     connet_str = f"tcp://{server_ip}:{server_port}"
-    server = zerorpc.Server(MyServer())
+    server = MyServer()
     server.bind(connet_str)
     server_task = gevent.spawn(server.run)
     server_task.join()

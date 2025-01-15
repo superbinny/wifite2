@@ -17,6 +17,8 @@ class CrackResult(object):
     def __init__(self):
         self.date = int(time.time())
         self.readable_date = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.date))
+        if not self.cracked_file.startswith('/'):
+            self.cracked_file = Configuration.linux.join(Configuration.data_dir, self.cracked_file)
 
     def dump(self):
         raise Exception('Unimplemented method: dump()')
@@ -39,16 +41,15 @@ class CrackResult(object):
 
     def save(self):
         """ Adds this crack result to the cracked file and saves it. """
-        name = CrackResult.cracked_file
         saved_results = []
-        if Configuration.linux.exists(name):
-            text = Configuration.linux.readfile(name)
+        if Configuration.linux.exists(self.cracked_file):
+            text = Configuration.linux.readfile(self.cracked_file)
             # with open(name, 'r') as fid:
             #    text = fid.read()
             try:
                 saved_results = loads(text)
             except Exception as e:
-                Color.pl('{!} error while loading %s: %s' % (name, str(e)))
+                Color.pl('{!} error while loading %s: %s' % (self.cracked_file, str(e)))
 
         # Check for duplicates
         this_dict = self.to_dict()
@@ -58,15 +59,15 @@ class CrackResult(object):
             if entry == this_dict:
                 # Skip if we already saved this BSSID+ESSID+TYPE+KEY
                 Color.pl('{+} {C}%s{O} already exists in {G}%s{O}, skipping.' % (
-                    self.essid, Configuration.cracked_file))
+                    self.essid, self.cracked_file))
                 return
 
         saved_results.append(self.to_dict())
-        Configuration.linux.writefile(dumps(saved_results, indent=2))
+        Configuration.linux.writefile(self.cracked_file, dumps(saved_results, indent=2))
         # with open(name, 'w') as fid:
         #    fid.write(dumps(saved_results, indent=2))
         Color.pl('{+} saved result to {C}%s{W} ({G}%d total{W})'
-                 % (name, len(saved_results)))
+                 % (self.cracked_file, len(saved_results)))
 
     @classmethod
     def display(cls, result_type):
@@ -89,7 +90,7 @@ class CrackResult(object):
             return
 
         Color.pl('\n{+} Displaying {G}%d{W} %s target(s) from {C}%s{W}\n' % (
-            len(targets), result_type, cls.cracked_file))
+            len(targets), result_type, name))
 
         results = sorted([cls.load(item) for item in targets], key=lambda x: x.date, reverse=True)
         longest_essid = max(len(result.essid or 'ESSID') for result in results)

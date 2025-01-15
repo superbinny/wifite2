@@ -66,6 +66,9 @@ class AttackAll(object):
             attacks.append(AttackBruteForce(target))
             return True
 
+        # 对任何网络都可以使用暴力破解
+        attacks.append(AttackBruteForce(target))
+
         if Configuration.use_eviltwin:
             # TODO: EvilTwin attack
             pass
@@ -97,9 +100,6 @@ class AttackAll(object):
                 # Handshake capture
                 if not Configuration.use_pmkid_only:
                     attacks.append(AttackWPA(target))
-
-        # 对任何网络都可以使用暴力破解
-        attacks.append(AttackBruteForce(target))
 
         if not attacks:
             Color.pl('{!} {R}Error: {O}Unable to attack: no attacks available')

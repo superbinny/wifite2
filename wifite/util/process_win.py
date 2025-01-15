@@ -168,6 +168,8 @@ class Process(object):
         #    self.pid.wait()
         #if self.out is None:
         #    (self.out, self.err) = self.pid.communicate()
+        if self.popen.output is None:
+            return None, None
         self.out = self.popen.output[0]
         if type(self.out) is bytes:
             self.out = self.out.decode('utf-8')

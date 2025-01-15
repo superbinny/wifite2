@@ -134,7 +134,8 @@ class Airmon(Dependency):
         Ip.up(interface)
 
         # /sys/class/net/wlan0/type
-        iface_type_path = Configuration.linux.join('/sys/class/net', interface, 'type')
+        iface_type_path = Configuration.linux.join('/sys/class/net', interface)
+        iface_type_path = Configuration.linux.join(iface_type_path, 'type')
         if Configuration.linux.exists(iface_type_path):
             # with open(iface_type_path, 'r'):
             #    pass
@@ -153,7 +154,8 @@ class Airmon(Dependency):
         Ip.up(interface)
 
         # /sys/class/net/wlan0/type
-        iface_type_path = Configuration.linux.join('/sys/class/net', interface, 'type')
+        iface_type_path = Configuration.linux.join('/sys/class/net', interface)
+        iface_type_path = Configuration.linux.join(iface_type_path, 'type')
         if Configuration.linux.exists(iface_type_path):
             # with open(iface_type_path, 'r'):
             #     pass
