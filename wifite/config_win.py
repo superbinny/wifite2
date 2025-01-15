@@ -320,18 +320,19 @@ class Configuration(object):
             # print(f'存在文件 {manufacturers.filename}')
             cls.manufacturers = {}
             data = cls.linux.readfile(manufacturers)
-            data = data.replace('\r', '')
-            lines = data.split('\n')
-            
-            # Parse txt format into dict
-            for line in lines:
-                # print(f'line={line}')
-                if not re.match(r"^\w", line):
-                    continue
-                line = line.replace('(hex)', '').replace('(base 16)', '')
-                fields = line.split()
-                if len(fields) >= 2:
-                    cls.manufacturers[fields[0]] = " ".join(fields[1:]).rstrip('.')
+            if not data is None:
+                data = data.replace('\r', '')
+                lines = data.split('\n')
+                
+                # Parse txt format into dict
+                for line in lines:
+                    # print(f'line={line}')
+                    if not re.match(r"^\w", line):
+                        continue
+                    line = line.replace('(hex)', '').replace('(base 16)', '')
+                    fields = line.split()
+                    if len(fields) >= 2:
+                        cls.manufacturers[fields[0]] = " ".join(fields[1:]).rstrip('.')
 
         if load_interface:
             cls.get_monitor_mode_interface()

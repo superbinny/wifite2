@@ -111,6 +111,7 @@ class MyServer(zerorpc.Server):
             print('Error: %s' % e)
 
     def doCommand(self, request, debug=False):
+        print("doCommand in: %s" % request)
         if request == 'reset_namespace':
             self.init()
         if debug:
