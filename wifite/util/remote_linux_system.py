@@ -97,14 +97,16 @@ class remote_linux_system():
         letters = string.ascii_letters + string.digits
         return ''.join(random.choice(letters) for _ in range(length))
 
-    def get_connect(self):
+    def get_connect(self, timeout=0):
         self.connect_str = f"tcp://{self.server_ip}:{self.server_port}"
         if not self.Emul:
             try:
                 # client = zerorpc.Client()
                 # client.set_heartbeat(1, 3)  # 心跳间隔1秒，超时时间3秒
                 # print(f'Connect to {self.connect_str} ...')
-                client = zerorpc.Client(timeout=TIME_FACTOR * 2)
+                if timeout == 0:
+                    timeout = TIME_FACTOR * 2
+                client = zerorpc.Client(timeout=timeout)
                 client.connect(self.connect_str)
             except Exception as ex:
                 remote_linux_system.pexception(ex, call_from='get_connect')
@@ -420,8 +422,8 @@ DN = open(os.devnull, 'w')
             f = open(src, 'rb')
             data = f.read()
             f.close()
-            if overwrite and self.client.exists(dst):
-                self.client.remove(dst)
+            if overwrite and self.exists(dst):
+                self.remove(dst)
             result = self.client.writefile(dst, data, mode='wb', async_=True)
             if not result:
                 return False

@@ -111,11 +111,11 @@ class MyServer(zerorpc.Server):
             print('Error: %s' % e)
 
     def doCommand(self, request, debug=False):
-        self.debug_print("doCommand: %s" % request)
-        if debug:
-            self.globals['debug'] = debug
         if request == 'reset_namespace':
             self.init()
+        if debug:
+            self.globals['debug'] = debug
+        self.debug_print("doCommand: %s" % request)
 
     def get_file(self, request):
         self.debug_print("get_file: %s" % request)

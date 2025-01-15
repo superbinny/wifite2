@@ -15,7 +15,7 @@ def generate_random_string(length):
 
 def init_linux(server_ip, server_port, is_debug=False, isEmul=False, isSave=False):
     linux = remote_linux_system(server_ip=server_ip, server_port=server_port, isEmul=isEmul, isSave=isSave)
-    linux.client = linux.get_connect()
+    linux.client = linux.get_connect(timeout=100)
     linux.reset(debug=is_debug)
     return linux
 
@@ -290,11 +290,12 @@ class Configuration(object):
                     # print(f'存在密码文件 {wlist}，位于远程')
                     break
             else:
-                remote_file = cls.copy_local_to_remote(wlist, check=True)
-                if remote_file is None:
-                    continue
-                cls.wordlist = remote_file
-                break
+                if os.path.exists(wlist):
+                    remote_file = cls.copy_local_to_remote(wlist, check=True)
+                    if remote_file is None:
+                        continue
+                    cls.wordlist = remote_file
+                    break
         
         if not cls.wpa_handshake_dir.startswith('/'):
             # 设置为远程：
@@ -397,7 +398,7 @@ class Configuration(object):
             Color.pl('{+} {C}option: {O}Remote server and port {R}%s{O}' % args.remote_server_port)
             cls.remote_server_port = args.remote_server_port
             server_ip, server_port = args.remote_server_port.split(':')
-            cls.linux = init_linux(server_ip=server_ip, server_port=server_port)
+            cls.linux = init_linux(server_ip=server_ip, server_port=server_port, is_debug=args.verbose>1)
 
         if args.random_mac:
             cls.random_mac = True
