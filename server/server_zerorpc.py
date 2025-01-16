@@ -27,6 +27,7 @@ import os
 
 import random
 import string
+from ..util.color_win import Color
 
 # pip install netifaces
 import netifaces as ni
@@ -71,8 +72,8 @@ class MyServer(zerorpc.Server):
 
     def exec_cmd_ret(self, request):
         result_id = 'result' + MyServer.generate_random_string(6)
-        cmd = f'{result_id}=' + request
-        self.debug_print("exec_cmd_ret: %s" % cmd)
+        cmd = f"{result_id}={request}"
+        self.debug_print("exec_cmd_ret", cmd)
         try:
             exec(cmd, self.globals, self.locals)
         except NameError as ex:
@@ -98,12 +99,12 @@ class MyServer(zerorpc.Server):
             return self.globals['debug']
         return False
 
-    def debug_print(self, msg):
+    def debug_print(self, cmd, msg):
         if self.is_debug():
-            print(msg)
+            Color.pl("{Debug} {C}%s:{W} %s" % (cmd, msg))
 
     def exec_cmd(self, request):
-        self.debug_print("exec_cmd: %s" % request)
+        self.debug_print("exec_cmd", request)
         try:
             exec(request, self.globals, self.locals)
         except Exception as e:
@@ -116,10 +117,10 @@ class MyServer(zerorpc.Server):
             self.init()
         if debug:
             self.globals['debug'] = debug
-        self.debug_print("doCommand: %s" % request)
+        self.debug_print("doCommand", request)
 
     def get_file(self, request):
-        self.debug_print("get_file: %s" % request)
+        self.debug_print("get_file", request)
         if os.path.exists(request):
             try:
                 f = open(request, 'rb')
@@ -132,7 +133,7 @@ class MyServer(zerorpc.Server):
             return None
 
     def writefile(self, request, data, mode='w'):
-        self.debug_print("writefile: %s, mode=%s" % (request, mode))
+        self.debug_print("writefile", "%s, mode=%s" % (request, mode))
         try:
             f = open(request, mode)
             f.write(data)
@@ -142,7 +143,7 @@ class MyServer(zerorpc.Server):
             return False
         
     def get_file_md5(self, file_path):
-        self.debug_print("get_file_md5: %s" % file_path)
+        self.debug_print("get_file_md5", file_path)
         # 获取文件的 md5
         hash_md5 = hashlib.md5()
         with open(file_path, "rb") as f:
@@ -155,7 +156,7 @@ class MyServer(zerorpc.Server):
             Renames file 'old' to 'new', works with separate partitions.
             Thanks to hannan.sadar
         """
-        self.debug_print("rename: %s=>%s" % (source, destination))
+        self.debug_print("rename", "%s=>%s" % (source, destination))
         if not os.path.exists(source):
             print(f"The file {source} not exist!")
             return 'ErrorNotExist'

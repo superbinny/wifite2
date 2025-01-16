@@ -228,7 +228,7 @@ DN = open(os.devnull, 'w')
         '''
         if not self.Emul:
             try:
-                self.client.doCommand('reset_namespace', debug=debug, async_=True)
+                self.client.doCommand('reset_namespace', debug, async_=True)
             except Exception as ex:
                 remote_linux_system.pexception(ex, call_from='doCommand')
 
