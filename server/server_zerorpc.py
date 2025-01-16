@@ -27,7 +27,7 @@ import os
 
 import random
 import string
-from ..util.color_win import Color
+from ..wifite.util.color_win import Color
 
 # pip install netifaces
 import netifaces as ni

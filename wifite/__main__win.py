@@ -8,6 +8,7 @@ except (ValueError, ImportError) as e:
 
 
 from .util.color_win import Color
+import gevent
 
 # import os
 # import subprocess
@@ -22,11 +23,15 @@ class Wifite(object):
         self.print_banner()
 
         Configuration.initialize(load_interface=False)
-
         if Configuration.linux.name == 'nt':
             Color.pl('{!} {R}error: {O}wifite{R} must be run under a {O}*NIX{W}{R} like OS')
             Configuration.exit_gracefully()
-        if Configuration.linux.getuid() != 0:
+        uid = Configuration.linux.getuid()
+        while uid is None:
+            uid = Configuration.linux.getuid()
+            gevent.sleep(0.2)
+
+        if uid != 0:
             Color.pl('{!} {R}error: {O}wifite{R} must be run as {O}root{W}')
             Color.pl('{!} {R}re-run with {O}sudo{W}')
             Configuration.exit_gracefully()
