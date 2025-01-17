@@ -56,12 +56,12 @@ def get_local_ip_using_netifaces(interface_name=None):
     if interface_name and interface_name in interfaces:
         ip_address = get_address(interface_name)
         if not ip_address is None:
-            ip_addresses.append(ip_address, interface_name)
+            ip_addresses.append((ip_address, interface_name))
     else:
         for interface in interfaces:
             ip_address = get_address(interface)
             if not ip_address is None:
-                ip_addresses.append(ip_address, interface)
+                ip_addresses.append((ip_address, interface))
     return ip_addresses
         
 class MyServer(zerorpc.Server):
