@@ -192,13 +192,14 @@ class MyServer(zerorpc.Server):
                 return f'ErrorUnknow:{e}'
 
 if __name__ == "__main__":
-    print('Start server ...')
+    Color.pl("{W}Start server ..." )
     server_port = '12999'
     server_ip = '0.0.0.0'
-    print(f'Listen to {server_ip}:{server_port}')
+    Color.pl('Listen to {C}%s{W}' % f'{server_ip}:{server_port}')
     ip_addrs = get_local_ip_using_netifaces()
     for ip_addr, interface in ip_addrs:
-        print(f'Client connect to {ip_addr}:{server_port}(Interface={interface})')
+        ipinfo = f'{ip_addr}:{server_port}'
+        Color.pl('Client connect to {C}%s{W} (Interface={C}%s{W}' % (ipinfo, interface))
     connet_str = f"tcp://{server_ip}:{server_port}"
     server = MyServer()
     server.bind(connet_str)
