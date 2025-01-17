@@ -307,6 +307,10 @@ class Configuration(object):
             cls.two_ghz = True
             Color.pl('{+} {C}option:{W} including {G}2.4Ghz networks{W} in scans')
 
+        if args.debug:
+            cls.debug = True
+            Color.pl('{+} {C}option:{W} set program to debug mode')
+
         if args.five_ghz:
             cls.five_ghz = True
             Color.pl('{+} {C}option:{W} including {G}5Ghz networks{W} in scans')

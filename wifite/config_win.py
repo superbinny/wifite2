@@ -56,6 +56,7 @@ class Configuration(object):
     show_broadcast_bssid = None
     show_negative_one = None
     remote_server_port = None
+    debug = None
 
     ignore_essids = None
     ignore_old_handshakes = None
@@ -118,7 +119,7 @@ class Configuration(object):
     data_dir = None
 
     @classmethod
-    def copy_local_to_remote(cls, src, check=False):
+    def copy_local_to_remote(cls, src, check=False, overwrite=False):
         local_file = src.replace('/', '\\')
         if os.path.exists(local_file):
             # print(f'存在密码文件 {src}，位于本地，拷贝到远程文件夹')
@@ -126,6 +127,9 @@ class Configuration(object):
             if src.startswith('./'):
                 src = src[2:]
             remote_file = cls.linux.join(cls.data_dir, src)
+            if overwrite:
+                if cls.linux.exists(remote_file):
+                    cls.linux.remove(remote_file)
             if cls.linux.exists(remote_file):
                 # 如果两边文件的 md5 不相同，则不是同一个文件
                 if check:
@@ -184,6 +188,7 @@ class Configuration(object):
         cls.use_ctrlp_pause = False  # Use Ctrl+P to pause the scan
         cls.remote_server_port = ""  # Remote server and port
         cls.linux = linux # Provide remote Linux support
+        cls.debug = False # Program debug mode
 
         cls.clients_only = False  # Only show targets that have associated clients
         cls.all_bands = False  # Scan for both 2Ghz and 5Ghz channels
@@ -309,12 +314,13 @@ class Configuration(object):
             #     cls.linux.makedirs(remote_dir)
             cls.wpa_handshake_dir = remote_dir
 
-        manufacturers = None        
+        manufacturers = None
+        # 各种网卡的物理地址对应的公司名称
         if cls.linux.exists('/usr/share/ieee-data/oui.txt'):
             manufacturers = '/usr/share/ieee-data/oui.txt'
         elif os.path.exists('ieee-oui.txt'):
             # 拷贝到远程
-            manufacturers = cls.copy_local_to_remote('ieee-oui.txt', check=True)
+            manufacturers = cls.copy_local_to_remote('ieee-oui.txt', check=True, overwrite=False)
         
         if cls.linux.exists(manufacturers):
             # print(f'存在文件 {manufacturers.filename}')
@@ -399,7 +405,7 @@ class Configuration(object):
             Color.pl('{+} {C}option: {O}Remote server and port {R}%s{O}' % args.remote_server_port)
             cls.remote_server_port = args.remote_server_port
             server_ip, server_port = args.remote_server_port.split(':')
-            cls.linux = init_linux(server_ip=server_ip, server_port=server_port, is_debug=args.verbose>1)
+            cls.linux = init_linux(server_ip=server_ip, server_port=server_port, is_debug=args.debug>1)
 
         if args.random_mac:
             cls.random_mac = True

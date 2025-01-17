@@ -40,6 +40,7 @@ class Airodump(Dependency):
         self.all_bands = Configuration.all_bands
         self.two_ghz = Configuration.two_ghz
         self.five_ghz = Configuration.five_ghz
+        self.debug = Configuration.debug
 
         self.encryption = encryption
         self.wps = wps

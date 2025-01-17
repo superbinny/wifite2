@@ -61,6 +61,12 @@ class Arguments(object):
                           help=Color.s('Wireless channel to scan e.g. {C}1,3-6{W} (default: {G}all 2Ghz channels{W})'))
         glob.add_argument('--channel', help=argparse.SUPPRESS, action='store', dest='channel')
 
+        glob.add_argument('-D',
+                          '--debug',
+                          action='store_true',
+                          dest='debug',
+                          help=Color.s('Set program to debug mode'))
+
         glob.add_argument('-ab',
                           '--allbands',
                           action='store_true',

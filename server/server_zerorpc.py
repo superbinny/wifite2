@@ -23,11 +23,15 @@
 
 import zerorpc, gevent
 import hashlib
-import os
+import os, sys
 
 import random
 import string
-from ..wifite.util.color_win import Color
+para_path=os.path.dirname(os.path.dirname(__file__))
+para_path=os.path.realpath(os.path.join(para_path, 'wifite'))
+sys.path.append(para_path)
+
+from util.color_win import Color
 
 # pip install netifaces
 import netifaces as ni
@@ -37,16 +41,26 @@ try:
 except TypeError:
     TIME_FACTOR = 0.2
 
-def get_local_ip_using_netifaces():
-    interfaces = ni.interfaces()
-    for interface in interfaces:
+def get_local_ip_using_netifaces(interface_name=None):
+    def get_address(interface):
         interface_info = ni.ifaddresses(interface)
         if ni.AF_INET in interface_info:
             for link in interface_info[ni.AF_INET]:
                 ip_address = link['addr']
                 if ip_address != "127.0.0.1":
                     return ip_address
-    return None
+        return None
+    
+    interfaces = ni.interfaces()
+    ip_address = None
+    if interface_name and interface_name in interfaces:
+        ip_address = get_address(interface_name)
+    else:
+        for interface in interfaces:
+            ip_address = get_address(interface)
+            if not ip_address is None:
+                return ip_address
+    return ip_address
         
 class MyServer(zerorpc.Server):
     def __init__(self):
@@ -180,7 +194,12 @@ if __name__ == "__main__":
     server_port = '12999'
     server_ip = '0.0.0.0'
     print(f'Listen to {server_ip}:{server_port}')
-    print(f'Client connect to {get_local_ip_using_netifaces()}:{server_port}')
+    tailscale_ip = get_local_ip_using_netifaces('tailscale0')
+    if tailscale_ip is None:
+        ip_addr = get_local_ip_using_netifaces()
+    else:
+        ip_addr = tailscale_ip
+    print(f'Client connect to {ip_addr}:{server_port}')
     connet_str = f"tcp://{server_ip}:{server_port}"
     server = MyServer()
     server.bind(connet_str)
