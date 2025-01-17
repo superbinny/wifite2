@@ -52,15 +52,17 @@ def get_local_ip_using_netifaces(interface_name=None):
         return None
     
     interfaces = ni.interfaces()
-    ip_address = None
+    ip_addresses = []
     if interface_name and interface_name in interfaces:
         ip_address = get_address(interface_name)
+        if not ip_address is None:
+            ip_addresses.append(ip_address, interface_name)
     else:
         for interface in interfaces:
             ip_address = get_address(interface)
             if not ip_address is None:
-                return ip_address
-    return ip_address
+                ip_addresses.append(ip_address, interface)
+    return ip_addresses
         
 class MyServer(zerorpc.Server):
     def __init__(self):
@@ -194,12 +196,9 @@ if __name__ == "__main__":
     server_port = '12999'
     server_ip = '0.0.0.0'
     print(f'Listen to {server_ip}:{server_port}')
-    tailscale_ip = get_local_ip_using_netifaces('tailscale0')
-    if tailscale_ip is None:
-        ip_addr = get_local_ip_using_netifaces()
-    else:
-        ip_addr = tailscale_ip
-    print(f'Client connect to {ip_addr}:{server_port}')
+    ip_addrs = get_local_ip_using_netifaces()
+    for ip_addr, interface in ip_addrs:
+        print(f'Client connect to {ip_addr}:{server_port}(Interface={interface})')
     connet_str = f"tcp://{server_ip}:{server_port}"
     server = MyServer()
     server.bind(connet_str)
