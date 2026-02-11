@@ -640,7 +640,7 @@ DN = open(os.devnull, 'w')
             if len(para.strip()) != 0:
                 cmd.append(para.strip())
         return ','.join(cmd)
-
+    
     # 实现一个完整的 Popen
     def Popen(self, args, bufsize=-1, executable=None,
                  stdin=None, stdout=None, stderr=None,
@@ -651,16 +651,28 @@ DN = open(os.devnull, 'w')
                  pass_fds=(), *, user=None, group=None, extra_groups=None,
                  encoding=None, errors=None, text=None, umask=-1, pipesize=-1,
                  process_group=None, result_id=None):
+    
+        def set_user():
+            # 切换到目标用户 ID (例如 UID 1000)
+            os.setuid(user)
+            # 如果需要，也可以切换组 ID
+            # os.setgid(1000)
 
         if result_id is None:
             result_id = 'resultTemp'
-
+        
+        if preexec_fn is None and user is not None:
+            _preexec_fn = set_user
+        else:
+            _preexec_fn = preexec_fn
+        
+        # 去掉 user={user}，因为在 ubuntu 执行的时候说没有 user 选项
         command = f'''{result_id}=Popen(args={args}, bufsize={bufsize}, executable={executable}, stdin={stdin}, stdout={stdout}, stderr={stderr},
-                            preexec_fn={preexec_fn}, close_fds={close_fds},
+                            preexec_fn={_preexec_fn}, close_fds={close_fds},
                             shell={shell}, cwd={cwd}, env={env}, universal_newlines={universal_newlines},
                             startupinfo={startupinfo}, creationflags={creationflags},
                             restore_signals={restore_signals}, start_new_session={start_new_session},
-                            pass_fds={pass_fds}, user={user}, group={group}, extra_groups={extra_groups},
+                            pass_fds={pass_fds}, group={group}, extra_groups={extra_groups},
                             encoding={encoding}, errors={errors}, text={text}, umask={umask}, pipesize={pipesize},
                             process_group={process_group})
                     '''
