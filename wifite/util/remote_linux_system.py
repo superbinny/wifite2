@@ -654,25 +654,26 @@ DN = open(os.devnull, 'w')
     
         def set_user():
             # 切换到目标用户 ID (例如 UID 1000)
-            os.setuid(user)
+            if user: os.setuid(user)
+            if group: os.setgid(group)
+            if extra_groups: os.setegid(extra_groups)
             # 如果需要，也可以切换组 ID
-            # os.setgid(1000)
 
         if result_id is None:
             result_id = 'resultTemp'
         
-        if preexec_fn is None and user is not None:
+        if preexec_fn is None:
             _preexec_fn = set_user
         else:
             _preexec_fn = preexec_fn
         
-        # 去掉 user={user}，因为在 ubuntu 执行的时候说没有 user 选项
+        # 去掉 user={user}，因为在 ubuntu 执行的时候说没有 user、group 选项，同时也去掉 extra_groups 估计也没有
         command = f'''{result_id}=Popen(args={args}, bufsize={bufsize}, executable={executable}, stdin={stdin}, stdout={stdout}, stderr={stderr},
                             preexec_fn={_preexec_fn}, close_fds={close_fds},
                             shell={shell}, cwd={cwd}, env={env}, universal_newlines={universal_newlines},
                             startupinfo={startupinfo}, creationflags={creationflags},
                             restore_signals={restore_signals}, start_new_session={start_new_session},
-                            pass_fds={pass_fds}, group={group}, extra_groups={extra_groups},
+                            pass_fds={pass_fds},
                             encoding={encoding}, errors={errors}, text={text}, umask={umask}, pipesize={pipesize},
                             process_group={process_group})
                     '''
