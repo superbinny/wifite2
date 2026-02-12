@@ -25,7 +25,14 @@ class LinuxPopen():
     def __init__(self, linux, command, stdout=PIPE, stderr=PIPE, cwd=None, bufsize=0, stdin=PIPE, result_id=None):
         self.linux = linux
         self.command = command
-        self.result_id, self.pid, self.output = self.linux.Popen(args=command, stdout=stdout, stderr=stderr, cwd=cwd, bufsize=bufsize, stdin=stdin, result_id=result_id)
+        self.result_id, self.pid, self.output = self.linux.MyPopen(
+            args=command,
+            stdout=stdout,
+            stderr=stderr,
+            cwd=cwd,
+            bufsize=bufsize,
+            stdin=stdin,
+            result_id=result_id)
         self.stdin = stdin
 
     def poll(self, result_id=None):

@@ -46,7 +46,16 @@ class FileType():
     filename = ''
 
 # test_zerorpc(server_ip='192.168.192.130', server_port='12999', isEmul=False)
-    
+
+g_user = g_group = g_extra_groups = 'None'
+
+def set_user():
+    # 切换到目标用户 ID (例如 UID 1000)
+    if g_user != 'None': os.setuid(int(g_user))
+    if g_group != 'None': os.setgid(int(g_group))
+    if g_extra_groups != 'None': os.setegid(int(g_extra_groups))
+    # 如果需要，也可以切换组 ID
+
 # 用于序列化所有的对象
 class SerialObject():
     def __init__(self, emul_path):
@@ -642,7 +651,7 @@ DN = open(os.devnull, 'w')
         return ','.join(cmd)
     
     # 实现一个完整的 Popen
-    def Popen(self, args, bufsize=-1, executable=None,
+    def MyPopen(self, args, bufsize=-1, executable=None,
                  stdin=None, stdout=None, stderr=None,
                  preexec_fn=None, close_fds=True,
                  shell=False, cwd=None, env=None, universal_newlines=None,
@@ -651,20 +660,17 @@ DN = open(os.devnull, 'w')
                  pass_fds=(), *, user=None, group=None, extra_groups=None,
                  encoding=None, errors=None, text=None, umask=-1, pipesize=-1,
                  process_group=None, result_id=None):
-    
-        def set_user():
-            # 切换到目标用户 ID (例如 UID 1000)
-            if user: os.setuid(user)
-            if group: os.setgid(group)
-            if extra_groups: os.setegid(extra_groups)
-            # 如果需要，也可以切换组 ID
 
         if result_id is None:
             result_id = 'resultTemp'
         
         if preexec_fn is None:
-            _preexec_fn = set_user
+            _preexec_fn = 'set_user'
+            g_user = user
+            g_group = group
+            g_extra_groups = extra_groups
         else:
+            g_user = g_group = g_extra_groups = 'None'
             _preexec_fn = preexec_fn
         
         # 去掉 user={user}，因为在 ubuntu 执行的时候说没有 user、group 选项，同时也去掉 extra_groups 估计也没有
@@ -673,8 +679,7 @@ DN = open(os.devnull, 'w')
                             shell={shell}, cwd={cwd}, env={env}, universal_newlines={universal_newlines},
                             startupinfo={startupinfo}, creationflags={creationflags},
                             restore_signals={restore_signals}, start_new_session={start_new_session},
-                            pass_fds={pass_fds},
-                            encoding={encoding}, errors={errors}, text={text}, umask={umask}, pipesize={pipesize},
+                            pass_fds={pass_fds}, encoding={encoding}, errors={errors}, text={text}, umask={umask}, pipesize={pipesize},
                             process_group={process_group})
                     '''
         command = remote_linux_system.fix_command(command)
