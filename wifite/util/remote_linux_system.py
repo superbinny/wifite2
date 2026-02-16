@@ -665,12 +665,13 @@ DN = open(os.devnull, 'w')
             result_id = 'resultTemp'
         
         if preexec_fn is None:
-            _preexec_fn = 'set_user'
+            _preexec_fn = id(set_user)
             g_user = user
             g_group = group
             g_extra_groups = extra_groups
+            _preexec_fn = None
         else:
-            g_user = g_group = g_extra_groups = 'None'
+            g_user = g_group = g_extra_groups = None
             _preexec_fn = preexec_fn
         
         # 去掉 user={user}，因为在 ubuntu 执行的时候说没有 user、group 选项，同时也去掉 extra_groups 估计也没有
